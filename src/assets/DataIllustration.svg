@@ -1,0 +1,15 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="300" rx="15" fill={darkMode ? "#1F2937" : "#F3F4F6"}/>
+  <rect x="100" y="100" width="200" height="150" rx="10" fill="#3B82F6" fill-opacity="0.2" stroke="#1D4ED8" stroke-width="2"/>
+  <line x1="100" y1="150" x2="300" y2="150" stroke="#1D4ED8" stroke-width="2"/>
+  <line x1="100" y1="200" x2="300" y2="200" stroke="#1D4ED8" stroke-width="2"/>
+  <path d="M120 220L150 130L180 190L210 150L240 170L270 120" stroke="#F97316" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="120" cy="220" r="5" fill="#F97316"/>
+  <circle cx="150" cy="130" r="5" fill="#F97316"/>
+  <circle cx="180" cy="190" r="5" fill="#F97316"/>
+  <circle cx="210" cy="150" r="5" fill="#F97316"/>
+  <circle cx="240" cy="170" r="5" fill="#F97316"/>
+  <circle cx="270" cy="120" r="5" fill="#F97316"/>
+  <rect x="120" y="80" width="160" height="30" rx="5" fill="#F97316" fill-opacity="0.2" stroke="#C2410C" stroke-width="2"/>
+  <text x="200" y="100" font-family="Arial" font-size="14" fill={darkMode ? "#E5E7EB" : "#1F2937"} text-anchor="middle">College Data Analysis</text>
+</svg>
