@@ -79,7 +79,7 @@ const AuthForm = () => {
   useEffect(() => {
     if (isAuthenticated && user) {
       navigate(user.role === "mentor" ? "/mentor-dashboard" :
-        user.role ==="admin" ? "/admin" : "/mentee-dashboard");
+        user.role === "mentee" ? "/mentee-dashboard" : "/admin");
     }
   }, [isAuthenticated, user, navigate]);
 
@@ -150,96 +150,155 @@ const AuthForm = () => {
   };
 
 const handleAuthError = (error) => {
-    // Clear previous errors
-    setFormErrors({});
-    
-    let errorMessage = "";
-    const newFormErrors = {};
-    
-    // Check if this is an error from the auth store with a specific message
-    if (error.message) {
-        errorMessage = error.message;
-        
-        // Handle specific cases from auth store
-        if (error.message.includes("already registered") || 
-            error.message.includes("already exists")) {
-            newFormErrors.email = error.message;
-        } else if (error.message.includes("Invalid email or password") || 
-                   error.message.includes("Incorrect email or password")) {
-            newFormErrors.email = "Invalid email or password";
-            newFormErrors.password = "Invalid email or password";
-        } else if (error.message.includes("token missing") || 
-                   error.message.includes("Authentication token missing")) {
-            errorMessage = "Session expired. Please log in again.";
-        }
-        
-        // Show the message and return early
-        showTemporaryMessage(errorMessage);
-        setFormErrors(newFormErrors);
-        setIsSubmitting(false);
-        setRequestTimeout(false);
-        return;
-    }
-    
-    // Handle axios response errors (only if not handled above)
-    if (error.response) {
-        switch (error.response.status) {
-            case 400:
-                errorMessage = error.response.data.message || "Validation error";
-                if (error.response.data.errors) {
-                    error.response.data.errors.forEach(err => {
-                        // Map backend field names to frontend field names if needed
-                        const fieldName = err.path === 'email' ? 'email' : 
-                                         err.path === 'password' ? 'password' : 
-                                         err.path;
-                        newFormErrors[fieldName] = err.msg;
-                    });
-                }
-                break;
-                
-            case 401:
-                errorMessage = "Invalid email or password";
-                newFormErrors.email = "Invalid email or password";
-                newFormErrors.password = "Invalid email or password";
-                break;
-                
-            case 403:
-                errorMessage = error.response.data.message || "Account temporarily locked";
-                break;
-                
-            case 404:
-                errorMessage = "Email not registered";
-                newFormErrors.email = "Email not registered";
-                break;
-                
-            case 409:
-                errorMessage = error.response.data.message || "User already exists with this email";
-                newFormErrors.email = errorMessage;
-                break;
-                
-            case 500:
-                errorMessage = "Server error. Please try again later.";
-                break;
-                
-            default:
-                errorMessage = error.response.data?.message || "Authentication failed";
-        }
-    } 
-    // Handle network errors
-    else if (error.code === 'ECONNABORTED' || error.message === 'Timeout') {
-        errorMessage = "Request timed out. Please try again.";
-    } else {
-        errorMessage = "Network error. Please check your connection.";
-    }
+  // Reset previous errors
+  setFormErrors({});
+  if (toastId) toast.dismiss(toastId);
 
-    // Update state
-    setFormErrors(newFormErrors);
-    showTemporaryMessage(errorMessage);
-    setIsSubmitting(false);
-    setRequestTimeout(false);
+  let errorMessage = "An unexpected error occurred. Please try again.";
+  const newFormErrors = {};
+  let showToast = false;
+
+  // Network timeout or connection error
+  if (error.code === 'ECONNABORTED' || error.message === 'Network Error') {
+    errorMessage = "Request timed out. Please check your connection.";
+    setRequestTimeout(true);
+  }
+
+  // Axios errors with response
+  else if (error.response) {
+    const { status, data } = error.response;
+
+    switch (status) {
+      case 400:
+        errorMessage = data.message || "Validation error";
+        if (Array.isArray(data.errors)) {
+          data.errors.forEach(err => {
+            if (err.path && err.msg) {
+              newFormErrors[err.path] = err.msg;
+            }
+          });
+          showToast = false; // Suppress toast if field errors are present
+        }
+        break;
+
+      case 401:
+        errorMessage = data.message || "Invalid credentials";
+        newFormErrors.email = "Invalid email or password";
+        newFormErrors.password = "Invalid email or password";
+        showToast = false;
+        break;
+
+      case 409:
+        errorMessage = data.message || "Email already registered";
+        newFormErrors.email = errorMessage;
+        showToast = false;
+        break;
+
+      case 403:
+        errorMessage = data.message || "Your account is temporarily locked";
+        break;
+
+      case 500:
+        errorMessage = "Server error. Please try again later.";
+        break;
+
+      default:
+        errorMessage = data?.message || "Something went wrong.";
+    }
+  }
+
+  // Unexpected non-Axios error
+  else if (error.message) {
+    errorMessage = error.message;
+    if (error.message.toLowerCase().includes("email")) {
+      newFormErrors.email = error.message;
+      showToast = false;
+    } else if (error.message.toLowerCase().includes("password")) {
+      newFormErrors.password = error.message;
+      showToast = false;
+    }
+  }
+
+  // Update form errors
+  setFormErrors(newFormErrors);
+  setIsSubmitting(false);
+
+  // Show toast only if not a form field error
+  if (showToast && errorMessage) {
+    const newToastId = toast.error(errorMessage, {
+      position: "top-right",
+      autoClose: 5000,
+    });
+    setToastId(newToastId); // Use the setter function here
+  }
 };
 
-const validateForm = () => {
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  if (!validateForm()) return;
+
+  setIsSubmitting(true);
+  setRequestTimeout(false);
+  setFormErrors({}); // Clear previous errors
+  
+  // Set timeout for the request (10 seconds)
+  const timeoutId = setTimeout(() => {
+    setRequestTimeout(true);
+    handleAuthError({ 
+      message: "Request timed out. Please try again.",
+      code: 'ECONNABORTED'
+    });
+  }, 10000);
+
+  try {
+    if (formState.rememberMe) {
+      localStorage.setItem("rememberMe", "true");
+      localStorage.setItem("email", formState.email.trim());
+      localStorage.setItem("password", formState.password);
+    } else {
+      localStorage.removeItem("rememberMe");
+      localStorage.removeItem("email");
+      localStorage.removeItem("password");
+    }
+
+    if (formState.isRegister) {
+      const signupData = {
+        email: formState.email.trim(),
+        password: formState.password,
+        fullName: formState.fullName.trim(),
+        role: formState.userType,
+      };
+      
+      if (formState.userType === "mentor") {
+        signupData.collegeName = formState.isOtherCollege
+          ? formState.otherCollegeName.trim()
+          : formState.collegeName;
+        signupData.idProof = formState.idProof;
+      }
+      
+      await signup(signupData);
+      showTemporaryMessage("Account created successfully! Please log in.", "success");
+      setFormState(prev => ({ ...prev, isRegister: false }));
+    } else {
+      await login({
+        email: formState.email.trim(),
+        password: formState.password
+      });
+      showTemporaryMessage("Logged in successfully!", "success");
+    }
+  } catch (error) {
+    handleAuthError(error);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
+
+
+
+
+
+  const validateForm = () => {
     const errors = {};
     let isValid = true;
 
@@ -302,7 +361,7 @@ const validateForm = () => {
 
     setFormErrors(errors);
     return isValid;
-};
+  };
 
   const showTemporaryMessage = (msg, type = "error") => {
     if (toastId) {
@@ -340,87 +399,17 @@ const validateForm = () => {
     
     // Clear error when user types
     if (formErrors[name]) {
-      setFormErrors({ ...formErrors, [name]: "" });
+      setFormErrors(prev => ({ ...prev, [name]: "" }));
     }
   };
 
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  if (!validateForm()) return;
-
-  setIsSubmitting(true);
-  setRequestTimeout(false);
-  
-  // Set timeout for the request (10 seconds)
-  const timeoutId = setTimeout(() => {
-    setRequestTimeout(true);
-    setIsSubmitting(false);
-    handleAuthError({ message: "Request timed out. Please try again." });
-  }, 10000);
-
-  try {
-    if (formState.rememberMe) {
-      localStorage.setItem("rememberMe", "true");
-      localStorage.setItem("email", formState.email.trim());
-      localStorage.setItem("password", formState.password);
-    } else {
-      localStorage.removeItem("rememberMe");
-      localStorage.removeItem("email");
-      localStorage.removeItem("password");
-    }
-
-    if (formState.isRegister) {
-      const signupData = {
-        email: formState.email.trim(),
-        password: formState.password,
-        fullName: formState.fullName.trim(),
-        role: formState.userType,
-      };
-      
-      if (formState.userType === "mentor") {
-        signupData.collegeName = formState.isOtherCollege
-          ? formState.otherCollegeName.trim()
-          : formState.collegeName;
-        signupData.idProof = formState.idProof;
-      }
-      
-      await signup(signupData);
-      showTemporaryMessage("Account created successfully! Please log in.", "success");
-      setFormState(prev => ({ ...prev, isRegister: false }));
-    } else {
-      // Send credentials as an object with email and password properties
-      await login({
-        email: formState.email.trim(),
-        password: formState.password
-      });
-      showTemporaryMessage("Logged in successfully!", "success");
-    }
-    
-    clearTimeout(timeoutId);
-  } catch (error) {
-  
-    clearTimeout(timeoutId);
-      //handleAuthError(error);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
     
-    if (!formState.resetEmail.trim()) {
-      setFormErrors({ resetEmail: "Email is required" });
-      return;
-    }
-    
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formState.resetEmail.trim())) {
-      setFormErrors({ resetEmail: "Please enter a valid email address" });
-      return;
-    }
-    
+    if (!validateForm()) return;
+
     setIsSubmitting(true);
     
     try {
@@ -469,7 +458,6 @@ const handleSubmit = async (e) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-4 bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-      {/* Add Toaster component here */}
       <Toaster />
       
       <motion.div
@@ -480,7 +468,7 @@ const handleSubmit = async (e) => {
       >
         <div className="flex flex-col items-center mb-6">
           <div className="flex items-center justify-center mb-2">
-             <img src={Logo} className="md:h-16 h-12 w-40 md:w-60" alt="collegesecracy" />
+            <img src={Logo} className="md:h-16 h-12 w-40 md:w-60" alt="collegesecracy" />
           </div>
           <p className="text-gray-600 dark:text-gray-300 text-center">
             {formState.showResetForm 
@@ -792,11 +780,11 @@ const handleSubmit = async (e) => {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                          <span>
-                              {formState.isRegister
-                                ? "Welcome aboard! Setting things up..."
-                                : "Hold tight, logging you in..."}
-                          </span>    
+                  <span>
+                    {formState.isRegister
+                      ? "Welcome aboard! Setting things up..."
+                      : "Hold tight, logging you in..."}
+                  </span>    
                 </>
               ) : (
                 formState.isRegister ? "Create Account" : "Sign In"

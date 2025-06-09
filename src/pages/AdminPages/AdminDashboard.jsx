@@ -3,6 +3,7 @@ import { useNavigate, Outlet } from 'react-router-dom';
 import useAuthStore from '../../store/useAuthStore.js';
 import { FullScreenLoader } from '../../components/Loaders/script.js';
 import { ErrorBoundary as ErrorBoundaryReact } from "react-error-boundary";
+import NotificationDropdown from './components/NotificationDropdown.jsx';
 
 // Enhanced Error Boundary Component
 const ErrorBoundary = ({ children }) => {
@@ -123,11 +124,12 @@ const AdminDashboard = () => {
 
   return (
     <ErrorBoundary>
-      <div className="flex h-screen bg-gray-100">
+      <div className="flex h-screen bg-gray-100 overflow-hidden">
         {/* Mobile sidebar toggle */}
         <button
-          className="md:hidden fixed bottom-4 right-4 z-50 p-3 bg-indigo-600 text-white rounded-full shadow-lg"
+          className="md:hidden fixed bottom-4 right-4 z-50 p-3 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 transition-colors"
           onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+          aria-label="Toggle menu"
         >
           {mobileSidebarOpen ? (
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -148,13 +150,14 @@ const AdminDashboard = () => {
         >
           <div className="p-4 flex items-center justify-between">
             {sidebarOpen ? (
-              <h1 className="text-xl font-bold">Admin Panel</h1>
+              <h1 className="text-xl font-bold whitespace-nowrap">Admin Panel</h1>
             ) : (
               <span className="text-xl font-bold">A</span>
             )}
             <button 
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-1 rounded-full hover:bg-indigo-600"
+              className="p-1 rounded-full hover:bg-indigo-600 focus:outline-none"
+              aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
             >
               {sidebarOpen ? (
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -178,10 +181,7 @@ const AdminDashboard = () => {
               text="Dashboard"
               active
               sidebarOpen={sidebarOpen}
-              onClick={() => {
-                navigate('/admin');
-                setMobileSidebarOpen(false);
-              }}
+              onClick={() => navigate('/admin')}
             />
             
             <NavItem 
@@ -192,25 +192,51 @@ const AdminDashboard = () => {
               }
               text="Manage Users"
               sidebarOpen={sidebarOpen}
-              onClick={() => {
-                navigate('/admin/users');
-                setMobileSidebarOpen(false);
-              }}
+              onClick={() => navigate('/admin/users')}
+            />
+
+            <NavItem 
+              icon={
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+              }
+              text="Manage Payment"
+              sidebarOpen={sidebarOpen}
+              onClick={() => navigate('/admin/plan-management')}
+            />
+             <NavItem 
+              icon={
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+              }
+              text="Manage Events"
+              sidebarOpen={sidebarOpen}
+              onClick={() => navigate('/admin/event-management')}
+            />
+
+            <NavItem 
+              icon={
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+              }
+              text="Payment Analytics"
+              sidebarOpen={sidebarOpen}
+              onClick={() => navigate('/admin/payment-analytics')}
             />
             
             <NavItem 
-  icon={
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-    </svg>
-  }
-  text="Manage College Data"
-  sidebarOpen={sidebarOpen}
-  onClick={() => {
-    navigate('/admin/college-data');
-    setMobileSidebarOpen(false);
-  }}
-/>
+              icon={
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              }
+              text="Manage College Data"
+              sidebarOpen={sidebarOpen}
+              onClick={() => navigate('/admin/college-data')}
+            />
 
             <NavItem 
               icon={
@@ -221,12 +247,8 @@ const AdminDashboard = () => {
               }
               text="Settings"
               sidebarOpen={sidebarOpen}
-              onClick={() => {
-                navigate('/admin/settings');
-                setMobileSidebarOpen(false);
-              }}
+              onClick={() => navigate('/admin/settings')}
             />
-
           </nav>
         </div>
 
@@ -242,7 +264,8 @@ const AdminDashboard = () => {
                 <h1 className="text-xl font-bold">Admin Panel</h1>
                 <button 
                   onClick={() => setMobileSidebarOpen(false)}
-                  className="p-1 rounded-full hover:bg-indigo-600"
+                  className="p-1 rounded-full hover:bg-indigo-600 focus:outline-none"
+                  aria-label="Close menu"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -280,7 +303,48 @@ const AdminDashboard = () => {
                   }}
                 />
 
+                <NavItem 
+                  icon={
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                  }
+                  text="Manage Payment"
+                  sidebarOpen={true}
+                  onClick={() => {
+                    navigate('/admin/plan-management');
+                    setMobileSidebarOpen(false);
+                  }}
+                />
                  <NavItem 
+                  icon={
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                  }
+                  text="Manage Events"
+                  sidebarOpen={true}
+                  onClick={() => {
+                    navigate('/admin/event-management');
+                    setMobileSidebarOpen(false);
+                  }}
+                />
+
+                <NavItem 
+                  icon={
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                  }
+                  text="Payment Analytics"
+                  sidebarOpen={true}
+                  onClick={() => {
+                    navigate('/admin/payment-analytics');
+                    setMobileSidebarOpen(false);
+                  }}
+                />
+
+                <NavItem 
                   icon={
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -314,30 +378,31 @@ const AdminDashboard = () => {
         )}
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden md:ml-20 md:ml-64 transition-all duration-300">
-           {/* Header */}
+        <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${
+          sidebarOpen ? 'md:ml-64' : 'md:ml-20'
+        }`}>
+          {/* Header */}
           <header className="bg-white shadow-sm z-10">
-            <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4">
-              <h2 className="text-lg md:text-xl font-semibold text-gray-800">Admin Dashboard</h2>
+            <div className="flex items-center justify-between px-4 py-3 sm:px-6">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-800 truncate">Admin Dashboard</h2>
               
-              <div className="flex items-center space-x-2 md:space-x-4">
-                <button className="p-2 text-gray-500 hover:text-gray-700">
-                  <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                  </svg>
-                </button>
+              <div className="flex items-center space-x-2 sm:space-x-4">
+                <div className="relative">
+                  <NotificationDropdown />
+                </div>
                 
                 <div className="relative" ref={profileDropdownRef}>
                   <button 
-                    className="flex items-center space-x-1 md:space-x-2 focus:outline-none"
+                    className="flex items-center space-x-1 sm:space-x-2 focus:outline-none"
                     onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                    aria-label="User menu"
                   >
-                    <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-semibold">
+                    <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-semibold">
                       {user?.fullName?.charAt(0) || 'A'}
                     </div>
-                    {(sidebarOpen || window.innerWidth < 768) && (
-                      <span className="text-sm md:text-base text-gray-700">{user?.fullName || 'Admin'}</span>
-                    )}
+                    <span className="hidden sm:inline text-sm sm:text-base text-gray-700 truncate max-w-xs">
+                      {user?.fullName || 'Admin'}
+                    </span>
                     <svg 
                       className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${
                         profileDropdownOpen ? 'transform rotate-180' : ''
@@ -354,7 +419,7 @@ const AdminDashboard = () => {
                   {profileDropdownOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20 border border-gray-200">
                       <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
-                        <div className="font-medium">{user?.email}</div>
+                        <div className="font-medium truncate">{user?.email}</div>
                         <div className="text-xs text-gray-500">Admin</div>
                       </div>
                       <button 
@@ -371,7 +436,7 @@ const AdminDashboard = () => {
           </header>
 
           {/* Main Content Area */}
-          <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50">
+          <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50">
             <ErrorBoundary>
               <Outlet />
             </ErrorBoundary>
@@ -388,7 +453,7 @@ const NavItem = ({ icon, text, active = false, sidebarOpen, onClick }) => {
       onClick={onClick}
       className={`flex items-center w-full px-4 py-3 mt-2 ${
         active ? 'bg-indigo-600' : 'hover:bg-indigo-600'
-      } rounded-lg transition-colors duration-200`}
+      } rounded-lg transition-colors duration-200 focus:outline-none`}
     >
       <span className={`${active ? 'text-white' : 'text-indigo-200'}`}>
         {icon}

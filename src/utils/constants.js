@@ -2,40 +2,40 @@ import { logo, e1, e2, e3, e4, e5, e6, new1, new2, new3, Krishna, Chandrashen} f
 
 
 const info = [
-    {
-        url : new1,
-        title : 'Enroll & Aspire',
-        Description : 'Fill out a quick form to showcase your skills and expertise'
-    },
-    {
-        url : new2,
-        title : 'Get Verified',
-        Description : 'Our team will evaluate your application to ensure quality and credibility'
-    },
-    {
-        url : new3,
-        title : 'Live & Connect',
-        Description : 'Start guiding mentees and sharing your valuable insights'
-    }
-]
+  {
+    url: new1,
+    title: 'Sign Up & Get Started',
+    Description: 'Register on CollegeSecracy and explore powerful counseling tools designed for aspirants.'
+  },
+  {
+    url: new2,
+    title: 'Access Premium Tools',
+    Description: 'Make a one-time payment to unlock advanced features like College Predictor and detailed insights.'
+  },
+  {
+    url: new3,
+    title: 'Plan Your Journey',
+    Description: 'Use expert tools and guidance to predict suitable colleges and make smart, timely decisions.'
+  }
+];
 
 const quality = [
   {
-      url : e4,
-      title : 'Personalized Mentorship',
-      Description : 'Discover secret details and untold stories about colleges, shared directly by experienced mentors to help you choose the best fit.',
+    url: e4,
+    title: 'Smart College Predictions',
+    Description: 'Accurate predictions based on your rank, category, gender, and preferences—built for real decision-making.'
   },
-    {
-        url : e5,
-        title : 'Exclusive College Insights',
-        Description : 'Connect with mentors who are current students or alumni from your dream college. Ask your queries and gain insider tips to make informed decisions.',
-    },
-    {
-        url : e6,
-        title : 'Tailored Guidance',
-        Description : 'Our platform matches you with mentors based on your interests and goals, ensuring a customized and effective mentoring experience',
-    },
-]
+  {
+    url: e5,
+    title: 'Trusted Counseling Support',
+    Description: 'Get timely help from experienced mentors for form filling, choice locking, and personalized strategy.'
+  },
+  {
+    url: e6,
+    title: 'One-Time Payment Access',
+    Description: 'Unlock premium features during the counseling season with a simple one-time payment. No hidden fees.'
+  }
+];
 
 const userData = [
     {

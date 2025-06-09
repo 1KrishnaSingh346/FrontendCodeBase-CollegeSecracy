@@ -22,7 +22,10 @@ import {
   LockClosedIcon as LockIcon,
   CheckCircleIcon,
   SparklesIcon,
-  ArrowRightIcon
+  ArrowRightIcon,
+  AdjustmentsHorizontalIcon,
+  CreditCardIcon ,
+  EnvelopeIcon 
 } from "@heroicons/react/24/solid";
 
 // Animation variants
@@ -61,32 +64,32 @@ const Home = ({ isLoggedIn }) => {
   });
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await fetch('/api/stats');
-        const data = await response.json();
-        setStatsData({
-          mentees: data.mentees,
-          mentors: data.mentors,
-          states: data.states
-        });
-      } catch (error) {
-        console.error("Error fetching stats:", error);
-        setStatsData({
-          mentees: 10000,
-          mentors: 5000,
-          states: 10
-        });
-      }
-    };
+  // useEffect(() => {
+  //   const fetchStats = async () => {
+  //     try {
+  //       //const response = await fetch('/api/stats');
+  //       const data = await response.json();
+  //       setStatsData({
+  //         mentees: data.mentees,
+  //         mentors: data.mentors,
+  //         states: data.states
+  //       });
+  //     } catch (error) {
+  //       console.error("Error fetching stats:", error);
+  //       setStatsData({
+  //         mentees: 10000,
+  //         mentors: 5000,
+  //         states: 10
+  //       });
+  //     }
+  //   };
 
-    const timer = setTimeout(() => {
-      fetchStats();
-    }, 500);
+  //   const timer = setTimeout(() => {
+  //     fetchStats();
+  //   }, 500);
     
-    return () => clearTimeout(timer);
-  }, []);
+  //   return () => clearTimeout(timer);
+  // }, []);
 
   // Toggle dark mode and save to localStorage
   const toggleDarkMode = () => {
@@ -105,54 +108,74 @@ const Home = ({ isLoggedIn }) => {
   }, [darkMode]);
 
   // Premium plans data
-  const premiumPlans =
-    [
-          {
-            title: "JOSAA Choice Filling",
-            tag: "Most Popular",
-            price: "₹599",
-            sessions: "Till Jossa Counselling",
-            features: [
-              "Optimal branch-institute selection",
-              "Round-wise strategy planning",
-              "Cutoff analysis & prediction",
-              "Document verification support"
-            ],
-            highlight: true
-          },
-          {
-            title: "JAC Delhi Counselling",
-            price: "₹399",
-            sessions: "Till Counselling",
-            features: [
-              "College preference strategy",
-              "Cutoff trend analysis",
-              "Course selection guidance",
-              "Document preparation help"
-            ]
-          },
-          {
-            title: "UPTAC Counselling Support",
-            price: "₹399",
-            sessions: "Till Counselling",
-            features: [
-              "State-specific guidance",
-              "College ranking advice",
-              "Seat matrix analysis",
-              "Fee structure explanation"
-            ]
-          },
-          {
-            title: "WhatsApp Support Package",
-            price: "₹999",
-            sessions: "Till Jossa Counselling",
-            features: [
-              "24/7 query resolution",
-              "Quick document review",
-              "Application assistance",
-              "Deadline reminders"
-            ]
-          }
+  const premiumPlans = [
+    {
+      id: 'josaa-counselling-support',
+      title: "JoSAA Counselling Support",
+      tag: "Most Popular",
+      price: "₹999",
+      sessions: "Till JoSAA Counselling",
+      features: [
+        "Optimal branch-institute selection",
+        "Round-wise strategy planning",
+        "Cutoff analysis & prediction",
+        "Document verification support"
+      ],
+      highlight: true
+    },
+        {
+      id: 'csab-counselling-support',
+      title: "CSAB Counselling Support",
+      tag: "Most Popular",
+      price: "₹999",
+      sessions: "Till CSAB Counselling",
+      features: [
+        "Optimal branch-institute selection",
+        "Round-wise strategy planning",
+        "Cutoff analysis & prediction",
+        "Document verification support"
+      ],
+      highlight: true
+    },
+            {
+      id: 'josaa-csab-counselling-support',
+      title: "JoSAA + CSAB Counselling Support (Combo )",
+      tag: "Most Popular",
+      price: "₹1899",
+      sessions: "Till JoSAA & CSAB Counselling",
+      features: [
+        "Optimal branch-institute selection",
+        "Round-wise strategy planning",
+        "Cutoff analysis & prediction",
+        "Document verification support"
+      ],
+      highlight: true
+    },
+    {
+      id: 'jac-delhi-counselling-support',
+      title: "JAC Delhi Counselling Support",
+      price: "₹999",
+      sessions: "Till Counselling",
+      features: [
+        "College preference strategy",
+        "Cutoff trend analysis",
+        "Course selection guidance",
+        "Document preparation help"
+      ]
+    },
+    {
+      id: 'uptac-counselling-support',
+      title: "UPTAC Counselling Support",
+      price: "₹999",
+      sessions: "Till Counselling",
+      features: [
+        "State-specific guidance",
+        "College ranking advice",
+        "Seat matrix analysis",
+        "Fee structure explanation"
+      ]
+    },
+    
   ];
 
   return (
@@ -327,58 +350,76 @@ const Home = ({ isLoggedIn }) => {
         </div>
       </motion.section>
 
-      {/* Features Highlight Section */}
-      <motion.section 
-        className="py-12 sm:py-16 bg-white dark:bg-gray-900"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true, margin: "-50px" }}
-        transition={{ duration: 0.8 }}
-      >
-        <div className="container mx-auto px-4 sm:px-6">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-center text-gray-900 dark:text-white mb-8 sm:mb-12">
-            Why Students <span className="text-orange-600 dark:text-orange-400">Love Us</span>
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
-            {[
-              {
-                icon: <BoltIcon className="h-8 w-8 sm:h-10 sm:w-10 text-orange-600 dark:text-orange-400" />,
-                title: "Instant Matching",
-                desc: "Get paired with ideal mentors in under 24 hours"
-              },
-              {
-                icon: <LockClosedIcon className="h-8 w-8 sm:h-10 sm:w-10 text-blue-600 dark:text-blue-400" />,
-                title: "Secure Platform",
-                desc: "End-to-end encrypted communications"
-              },
-              {
-                icon: <CalendarIcon className="h-8 w-8 sm:h-10 sm:w-10 text-orange-600 dark:text-orange-400" />,
-                title: "Flexible Scheduling",
-                desc: "Book sessions at your convenience"
-              }
-            ].map((feature, i) => (
-              <motion.div
-                key={i}
-                whileHover={{ y: -5 }}
-                className="bg-gray-100 dark:bg-gray-800 p-4 sm:p-6 rounded-xl text-center hover:shadow-lg transition-all"
-                variants={fadeIn}
-              >
-                <div className="bg-gray-200 dark:bg-gray-700 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                  {feature.icon}
-                </div>
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">{feature.title}</h3>
-                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">{feature.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </motion.section>
+{/* Features Highlight Section */}
+<motion.section 
+  className="py-12 sm:py-16 bg-white dark:bg-gray-900"
+  initial={{ opacity: 0 }}
+  whileInView={{ opacity: 1 }}
+  viewport={{ once: true, margin: "-50px" }}
+  transition={{ duration: 0.8 }}
+>
+  <div className="container mx-auto px-4 sm:px-6">
+    <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-center text-gray-900 dark:text-white mb-8 sm:mb-12">
+      Why Students <span className="text-orange-600 dark:text-orange-400">Love Us</span>
+    </h2>
+
+    <div className="overflow-x-auto">
+      <div className="flex gap-4 sm:gap-6 md:gap-8 snap-x scrollbar-hide snap-mandatory overflow-x-auto px-1 sm:px-0">
+        {[
+          {
+            icon: <BoltIcon className="h-8 w-8 sm:h-10 sm:w-10 text-purple-600 dark:text-purple-400" />,
+            title: "Instant College Matchmaking",
+            desc: "Find top college options instantly based on your rank and category",
+          },
+          {
+            icon: <LockClosedIcon className="h-8 w-8 sm:h-10 sm:w-10 text-blue-600 dark:text-blue-400" />,
+            title: "Secure & Private Data",
+            desc: "Your academic and personal data stays confidential and encrypted",
+          },
+          {
+            icon: <CalendarIcon className="h-8 w-8 sm:h-10 sm:w-10 text-green-600 dark:text-green-400" />,
+            title: "Track Prediction History",
+            desc: "Access your previous predictions and compare outcomes anytime",
+          },
+          {
+            icon: <AdjustmentsHorizontalIcon className="h-8 w-8 sm:h-10 sm:w-10 text-yellow-600 dark:text-yellow-400" />,
+            title: "Advanced Filters",
+            desc: "Sort colleges by state, category, gender, seat type, and more",
+          },
+          {
+            icon: <CreditCardIcon className="h-8 w-8 sm:h-10 sm:w-10 text-pink-600 dark:text-pink-400" />,
+            title: "Premium Tools Access",
+            desc: "Unlock powerful predictors and insights with one-time payment",
+          },
+          {
+            icon: <EnvelopeIcon className="h-8 w-8 sm:h-10 sm:w-10 text-indigo-600 dark:text-indigo-400" />,
+            title: "Email Report Generator",
+            desc: "Get detailed prediction reports delivered right to your inbox",
+          }
+        ].map((feature, i) => (
+          <motion.div
+            key={i}
+            whileHover={{ y: -5 }}
+            className="min-w-[250px] sm:min-w-[300px] bg-gray-100 dark:bg-gray-800 p-4 sm:p-6 rounded-xl text-center hover:shadow-lg transition-all snap-center"
+          >
+            <div className="bg-gray-200 dark:bg-gray-700 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+              {feature.icon}
+            </div>
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">{feature.title}</h3>
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">{feature.desc}</p>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  </div>
+</motion.section>
+
 
 
 {/* Premium Counselling Section   */}
 <motion.section 
    id="counseling-plans"
-  className="py-16 sm:py-20 bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 relative overflow-hidden"
+  className="py-16 sm:py-20 bg-gradient-to-b  from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 relative overflow-hidden"
   initial={{ opacity: 0 }}
   whileInView={{ opacity: 1 }}
   viewport={{ once: true, margin: "-50px" }}
@@ -475,58 +516,64 @@ const Home = ({ isLoggedIn }) => {
       </div>
     </div>
 
-    {/* Desktop View - Grid Layout */}
-    <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
-      {premiumPlans.map((plan, index) => (
-        <motion.div 
-          key={index}
-          whileHover={{ y: -5, scale: 1.02 }}
-          className={`rounded-xl overflow-hidden shadow-lg backdrop-blur-sm bg-white/70 dark:bg-gray-800/70 border border-white/20 dark:border-gray-700/50 hover:shadow-xl transition-all duration-300 ${
-            plan.highlight ? 'transform scale-[1.02] z-10 border-2 border-orange-500' : ''
-          }`}
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: index * 0.1 }}
-          viewport={{ once: true }}
-        >
-          <div className="p-6 h-full flex flex-col">
-            {plan.tag && (
-              <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-xs font-bold px-3 py-1 rounded-full w-max mb-4 shadow-lg backdrop-blur-sm">
-                {plan.tag}
-              </div>
-            )}
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">{plan.title}</h3>
-            <div className="text-3xl font-bold text-orange-600 dark:text-orange-400 mb-4">
-              {plan.price}
-              <span className="text-sm text-gray-500 dark:text-gray-400">/package</span>
+{/* Desktop View - Horizontal Slider */}
+<div className="hidden md:block overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-hide px-4">
+  <div className="inline-flex space-x-6 min-w-max">
+    {premiumPlans.map((plan, index) => (
+      <motion.div 
+        key={index}
+        whileHover={{ y: -5, scale: 1.02 }}
+        className={`snap-center w-[320px] transition-transform duration-300 ease-in-out transform rounded-xl overflow-hidden shadow-lg backdrop-blur-sm bg-white/70 dark:bg-gray-800/70 border border-white/20 dark:border-gray-700/50 hover:shadow-xl ${
+          plan.highlight ? 'scale-[1.02] z-10 border-2 border-orange-500' : ''
+        }`}
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: index * 0.1 }}
+        viewport={{ once: true }}
+      >
+        <div className="p-6 flex flex-col h-full">
+          {plan.tag && (
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-xs font-bold px-3 py-1 rounded-full w-max mb-4 shadow-lg backdrop-blur-sm">
+              {plan.tag}
             </div>
-            <div className="flex items-center mb-4 bg-white/50 dark:bg-gray-700/50 px-3 py-2 rounded-lg backdrop-blur-sm">
-              <CalendarIcon className="h-5 w-5 mr-2 text-orange-500" />
-              <span className="text-gray-700 dark:text-gray-300 text-sm">{plan.sessions}</span>
-            </div>
-            <ul className="space-y-3 mb-6">
-              {plan.features.map((feature, i) => (
-                <li key={i} className="flex items-start">
-                  <CheckCircleIcon className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5 mr-2" />
-                  <span className="text-gray-700 dark:text-gray-300 text-sm">{feature}</span>
-                </li>
-              ))}
-            </ul>
-            <Link 
-            to="/authForm?type=register"
-              className={`mt-auto w-full py-3 px-4 rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-xl flex items-center justify-center backdrop-blur-sm ${
-                plan.highlight 
-                  ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white' 
-                  : 'bg-white/80 dark:bg-gray-700/80 hover:bg-white dark:hover:bg-gray-600 text-gray-800 dark:text-white'
-              }`}
-            >
-              {plan.highlight ? 'Get Premium' : 'Choose Plan'}
-              <ArrowRightIcon className="h-4 w-4 ml-2" />
-            </Link>
+          )}
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">{plan.title}</h3>
+          <div className="text-3xl font-bold text-orange-600 dark:text-orange-400 mb-4">
+            {plan.price}
+            <span className="text-sm text-gray-500 dark:text-gray-400">/package</span>
           </div>
-        </motion.div>
-      ))}
-    </div>
+          <div className="flex items-center mb-4 bg-white/50 dark:bg-gray-700/50 px-3 py-2 rounded-lg backdrop-blur-sm">
+            <CalendarIcon className="h-5 w-5 mr-2 text-orange-500" />
+            <span className="text-gray-700 dark:text-gray-300 text-sm">{plan.sessions}</span>
+          </div>
+          <ul className="space-y-3 mb-6 flex-1 overflow-hidden">
+            {plan.features.map((feature, i) => (
+              <li key={i} className="flex items-start">
+                <CheckCircleIcon className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5 mr-2" />
+                <span className="text-gray-700 dark:text-gray-300 text-sm">{feature}</span>
+              </li>
+            ))}
+          </ul>
+          <Link 
+            to="/authForm?type=register"
+            className={`mt-auto w-full py-3 px-4 rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-xl flex items-center justify-center backdrop-blur-sm ${
+              plan.highlight 
+                ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white' 
+                : 'bg-white/80 dark:bg-gray-700/80 hover:bg-white dark:hover:bg-gray-600 text-gray-800 dark:text-white'
+            }`}
+          >
+            {plan.highlight ? 'Get Premium' : 'Choose Plan'}
+            <ArrowRightIcon className="h-4 w-4 ml-2" />
+          </Link>
+        </div>
+      </motion.div>
+    ))}
+  </div>
+</div>
+
+
+
+
 
     {/* Coming Soon Notice */}
     <motion.div 

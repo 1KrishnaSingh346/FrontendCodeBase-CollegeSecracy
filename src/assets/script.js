@@ -18,6 +18,7 @@ import AdminImage from "./Admin.webp";
 import new1 from "./new1.webp";
 import new2 from "./new2.webp";
 import new3 from "./new3.webp";
+import avatar from "./avatar.webp"
 
 
 export
@@ -41,5 +42,6 @@ export
     AdminImage,
     new1,
     new2,
-    new3
+    new3,
+    avatar
  };

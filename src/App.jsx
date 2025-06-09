@@ -42,8 +42,13 @@ const AdminHome = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pag
 const AdminUsers = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/AdminPages/AdminUsers.jsx"));
 const AdminSettings = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/AdminPages/AdminSettings.jsx"));
 const AdminCollegeData = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/AdminPages/AdminCollegeData.jsx"));
+import LandingRedirect from './components/LandingRedirect.jsx';
+const AdminPaymentManagement = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/AdminPages/AdminPaymentManagement.jsx"));
+const AdminEventManagement = React.lazy(() => import("./pages/AdminPages/adminEventManagement.jsx"));
+const AdmonPaymentAnalytics = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/AdminPages/AdminPaymentAnalytics.jsx"));
 
 import DashboardLayout from "./pages/Layouts/DashboardLayout.jsx";
+import AdminPaymentAnalytics from "./pages/AdminPages/AdminPaymentAnalytics.jsx";
 
 
 
@@ -91,19 +96,20 @@ const ErrorBoundary = ({ children }) => {
   );
 };
 
-// Public Route Component
 const PublicRoute = ({ children }) => {
   const { user } = useAuthStore();
   const location = useLocation();
-
   if (user) {
-    return (
-      <Navigate 
-        to={user.role === "mentor" ? "/mentor-dashboard" : "/mentee-dashboard"} 
-        state={{ from: location }}
-        replace 
-      />
-    );
+    switch (user.role) {
+      case 'admin':
+        return <Navigate to="/admin" state={{ from: location }} replace />;
+      case 'mentee':
+        return <Navigate to="/mentee-dashboard" state={{ from: location }} replace />;
+      case 'mentor':
+        return <Navigate to="/mentor-dashboard" state={{ from: location }} replace />;
+      default:
+        return <Navigate to="/" replace />;
+    }
   }
 
   return children;
@@ -117,19 +123,13 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   } = useAuthStore();
   const location = useLocation();
 
-  // Show loader while auth is being checked
-  if (isCheckingAuth || !initialAuthCheckComplete) {
+  if ((isCheckingAuth && !initialAuthCheckComplete) || !initialAuthCheckComplete) {
     return <InitialLoader fullScreen />;
   }
 
   if (!user) {
-    return <Navigate to="/authForm" state={{ from: location }} replace />;
+    return <Navigate to="/" state={{ from: location }} replace />;
   }
-
-  // Debug logs
-  // console.log("ProtectedRoute - User:", user);
-  // console.log("ProtectedRoute - User role:", user.role);
-  // console.log("ProtectedRoute - Allowed roles:", allowedRoles);
 
   // More robust role comparison
   const normalizedUserRole = String(user.role).toLowerCase().trim();
@@ -437,12 +437,11 @@ function AppContent() {
   <Route path="users" element={<AdminUsers />} />
   <Route path="settings" element={<AdminSettings />} />
   <Route path="college-data" element={<AdminCollegeData/>} />
+  <Route path="plan-management" element={<AdminPaymentManagement/>} />
+    <Route path="event-management" element={<AdminEventManagement/>} />
+  <Route path="payment-analytics" element={<AdminPaymentAnalytics/>} />
 </Route>
-{/* 
-          <Route
-          path="/admin"
-          element={<AdminDashboard/>}
-          /> */}
+
 
           {/* 404 Fallback */}
           <Route path="*" element={

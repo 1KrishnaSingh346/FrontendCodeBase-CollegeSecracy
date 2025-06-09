@@ -254,9 +254,5 @@ Navbar.propTypes = {
   theme: PropTypes.oneOf(['light', 'dark'])
 };
 
-Navbar.defaultProps = {
-  isLoggedIn: false,
-  theme: 'dark'
-};
 
 export default Navbar;

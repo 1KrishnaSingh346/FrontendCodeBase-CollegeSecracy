@@ -11,8 +11,8 @@ export const fetchCollegeData = async (counsellingType, round, year) => {
     const response = await api.get(url, {
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+      },
+       withCredentials: true 
     }); 
 
     // Transform response to match CollegePredictor's expected format

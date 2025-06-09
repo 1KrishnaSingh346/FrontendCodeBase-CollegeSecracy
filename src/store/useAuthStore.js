@@ -3,40 +3,56 @@ import api from '../lib/axios';
 
 const useAuthStore = create((set, get) => ({
   user: null,
-  token: null,
   isAuthenticated: false,
   isLoading: false,
   isCheckingAuth: false,
   error: null,
-  AllUsers : null,
-  isfetchingUser : false,
+  AllUsers: null,
+  isfetchingUser: false,
   initialAuthCheckComplete: false,
+    feedbackHistory: [],
+  loadingFeedback: false,
+    notifications: [],
+  loadingNotifications: false,
+   pollingInterval: null,
 
 initializeAuth: async () => {
   set({ isCheckingAuth: true });
   try {
-    const token = localStorage.getItem('token');
-    if (token) {
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      const response = await api.get('/api/v1/users/me');
-      console.log('User role from API:', response.data.data.user.role); // Debug log
-      
+    console.log("Checking Session Begin");
+    const response = await api.get('/api/v1/auth/check-session');
+
+    // Check backend code field explicitly
+    if (response.data?.code && response.data.code >= 400) {
+      // Treat as unauthenticated or error
+      set({
+        user: null,
+        isAuthenticated: false,
+        isCheckingAuth: false,
+        initialAuthCheckComplete: true
+      });
+      return;
+    }
+
+    if (response.data?.data?.user) {
       set({
         user: response.data.data.user,
-        token,
         isAuthenticated: true,
         isCheckingAuth: false,
         initialAuthCheckComplete: true
       });
     } else {
-      set({ isCheckingAuth: false, initialAuthCheckComplete: true });
+      set({ 
+        isCheckingAuth: false, 
+        initialAuthCheckComplete: true,
+        isAuthenticated: false,
+        user: null
+      });
     }
   } catch (err) {
     console.error('Auth initialization error:', err);
-    localStorage.removeItem('token');
     set({ 
       user: null,
-      token: null,
       isAuthenticated: false,
       isCheckingAuth: false,
       initialAuthCheckComplete: true
@@ -44,231 +60,169 @@ initializeAuth: async () => {
   }
 },
 
-  login: async (email, password) => {
+login: async (credentials) => {
   console.log('[AuthStore] Login initiated');
-
-  // Handle both direct params and object param
-  const loginData = typeof email === 'object' 
-    ? { email: email.email, password: email.password }
-    : { email, password };
-
-  console.debug('Login credentials:', loginData);
-  
-  set({ isLoading: true, error: null });
+  set({ isLoading: true, error: null }); // Clear previous error
   
   try {
+    // Client-side validation first
+    if (!credentials.email?.trim()) {
+      throw new Error('Please provide your email address');
+    }
+    if (!credentials.password) {
+      throw new Error('Please provide your password');
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(credentials.email.trim())) {
+      throw new Error('Please provide a valid email address');
+    }
+
     const response = await api.post('/api/v1/auth/login', {
-      email: loginData.email.trim(),
-      password: loginData.password
+      email: credentials.email.trim(),
+      password: credentials.password
     }, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: { 'Content-Type': 'application/json' },
+      withCredentials: true,
+      timeout: 10000
     });
 
-    console.log('[AuthStore] Login response:', {
-      status: response.status,
-      data: response.data,
-      headers: response.headers
-    });
-
-    if (!response.data?.token) {
-      console.error('[AuthStore] Missing token in response');
-      throw new Error('Authentication token missing');
+    if (response.data?.status === 'success' && response.data.data?.user) {
+      const { user } = response.data.data;
+      set({
+        user,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null
+      });
+      return user;
     }
 
-    if (!response.data?.data?.user) {
-      console.error('[AuthStore] Missing user data in response');
-      throw new Error('User data missing');
-    }
-
-    const { token, data: { user } } = response.data;
-
-    localStorage.setItem('token', token);
-    console.debug('[AuthStore] Token stored in localStorage');
-
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    console.debug('[AuthStore] Authorization header set');
-
-    set({
-      user,
-      token,
-      isAuthenticated: true,
-      isLoading: false
-    });
-
-    console.log('[AuthStore] Login successful for:', user.email);
-    return user;
+    throw new Error('Login successful but user data missing');
 
   } catch (err) {
-    console.error('[AuthStore] Login failed:', {
-      name: err.name,
-      message: err.message,
-      stack: err.stack,
-      response: {
-        status: err.response?.status,
-        data: err.response?.data,
-        headers: err.response?.headers
-      }
-    });
-
+    console.error('[AuthStore] Login failed:', err);
+    
     let errorMessage = 'Login failed. Please try again.';
     
-    if (!err.response) {
-      errorMessage = 'Network error. Please check your connection.';
-    } else {
-      switch (err.response.status) {
-        case 400:
-          errorMessage = err.response.data.message || 'Invalid request format';
-          break;
-        case 401:
-          errorMessage = err.response.data.message || 'Invalid email or password';
-          break;
-        case 403:
-          errorMessage = err.response.data.message || 'Account temporarily locked';
-          break;
-        case 500:
-          errorMessage = 'Server error. Please try again later.';
-          break;
+    if (err.code === 'ECONNABORTED') {
+      errorMessage = 'Request timeout. Please try again.';
+    } else if (err.response) {
+      // Use server-provided message if available
+      if (err.response.data?.message) {
+        errorMessage = err.response.data.message;
       }
+    } else if (err.message.includes('Network Error')) {
+      errorMessage = 'Network error. Please check your connection.';
+    } else if (err.message) {
+      // Use validation error messages
+      errorMessage = err.message;
     }
-
-    // Clear any partial auth state
-    localStorage.removeItem('token');
-    api.defaults.headers.common['Authorization'] = '';
-
+    
     set({
-      user: null,
-      token: null,
-      isAuthenticated: false,
       isLoading: false,
-      error: errorMessage
+      error: errorMessage // Store just the message string
     });
-
+    
     throw new Error(errorMessage);
   }
 },
 
-signup: async (userData) => {
-    console.debug('[AuthStore] Signup initiated with data:', userData);
-    set({ isLoading: true, error: null });
+ signup: async (userData) => {
+  console.debug('[AuthStore] Signup initiated with data:', userData);
+  set({ isLoading: true, error: null });
   
-    try {
-      console.debug('[AuthStore] Making signup request...');
-      const response = await api.post('/api/v1/auth/signup', userData);
-      console.debug('[AuthStore] Signup response:', response.data);
-      
-      if (!response.data?.token || !response.data?.data?.user) {
-        console.warn('[AuthStore] Invalid server response format');
-        throw new Error('Invalid server response format');
-      }
-
-      localStorage.setItem('token', response.data.token);
-      console.debug('[AuthStore] Token stored in localStorage');
-      
-      api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
-      console.debug('[AuthStore] Authorization header updated');
-      
-      set({
-        user: response.data.data.user,
-        token: response.data.token,
-        isAuthenticated: true,
-        isLoading: false
-      });
-
-      console.debug('[AuthStore] Signup successful, returning user data');
-      return response.data.data.user;
-      
-    } catch (err) {
-      console.error('[AuthStore] Signup error:', {
-        error: err,
-        response: err.response,
-        config: err.config
-      });
-      
-      // Don't set any error state here - just prepare the error to throw
-      let errorMessage = 'Signup failed. Please try again.';
-      let errorType = 'generic';
-      
-      if (err.code === 'ECONNABORTED') {
-        errorMessage = 'Server is not responding. Please try again later.';
-        errorType = 'timeout';
-      } else if (err.response) {
-        // Handle HTTP error responses
-        if (err.response.status === 409) {
-          errorMessage = err.response.data.message || 'Email already registered. Please log in.';
-          errorType = 'email_conflict';
-        } else if (err.response.status === 400) {
-          errorMessage = err.response.data.message || 'Validation error. Please check your input.';
-          errorType = 'validation';
-        } else if (err.response.data?.message) {
-          errorMessage = err.response.data.message;
-        }
-      } else if (err.message.includes('Network Error')) {
-        errorMessage = 'Cannot connect to server. Check your internet connection.';
-        errorType = 'network';
-      }
-      
-      // Clear any error state in the store - let the component handle it
-      set({ 
-        error: null, 
-        isLoading: false 
-      });
-      
-      // Create an enriched error object
-      const errorToThrow = new Error(errorMessage);
-      errorToThrow.type = errorType;
-      
-      // Attach additional error details if available
-      if (err.response?.data?.errors) {
-        errorToThrow.errors = err.response.data.errors;
-      }
-      
-      throw errorToThrow;
+  try {
+    const response = await api.post('/api/v1/auth/signup', userData, {
+      withCredentials: true,
+      timeout: 10000 // 10 seconds timeout
+    });
+    
+    if (!response.data?.data?.user) {
+      console.warn('[AuthStore] Invalid server response format');
+      throw new Error('Invalid server response format');
     }
-  },
+    
+    set({
+      user: response.data.data.user,
+      isAuthenticated: true,
+      isLoading: false
+    });
+
+    return response.data.data.user;
+    
+  } catch (err) {
+    console.error('[AuthStore] Signup error:', {
+      error: err,
+      response: err.response,
+      config: err.config
+    });
+    
+    let errorMessage = 'Signup failed. Please try again.';
+    let errorType = 'generic';
+    let errors = [];
+    
+    if (err.code === 'ECONNABORTED') {
+      errorMessage = 'Request timeout. Please try again.';
+      errorType = 'timeout';
+    } else if (err.response) {
+      if (err.response.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      
+      if (err.response.data?.errors) {
+        errors = err.response.data.errors;
+      }
+      
+      switch (err.response.status) {
+        case 400:
+          errorType = 'validation';
+          break;
+        case 409:
+          errorType = 'email_conflict';
+          break;
+        case 422:
+          errorType = 'validation';
+          break;
+      }
+    } else if (err.message.includes('Network Error')) {
+      errorMessage = 'Network error. Please check your connection.';
+      errorType = 'network';
+    }
+    
+    const errorToThrow = new Error(errorMessage);
+    errorToThrow.type = errorType;
+    errorToThrow.errors = errors;
+    
+    throw errorToThrow;
+  }
+},
 
   logout: async () => {
-      console.log('[AuthStore] Initiating logout');
-  
+    console.log('[AuthStore] Initiating logout');
 
-  if (!get().isAuthenticated) {
-    console.log('[AuthStore] Not authenticated, skipping logout');
-    return;
-  }
+    if (!get().isAuthenticated) {
+      console.log('[AuthStore] Not authenticated, skipping logout');
+      return;
+    }
     
     try {
-      try {
-        await api.post('/api/v1/auth/logout');
-      } catch (err) {
-        if (err.response?.status !== 404) {
-          console.warn('[AuthStore] Logout endpoint not available, proceeding with client-side cleanup');
-        }
-      }
-  
-      // Client-side cleanup (always execute)
-      localStorage.removeItem('token');
-      sessionStorage.removeItem('token');
-      delete api.defaults.headers.common['Authorization'];
+      await api.post('/api/v1/auth/logout', {}, {
+        withCredentials: true
+      });
       
       set({
         user: null,
-        token: null,
         isAuthenticated: false,
         isLoading: false
       });
-  
-      // Clear cookies (works for same domain)
-      document.cookie = 'jwt=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
       
       console.log('[AuthStore] Logout completed');
-      
     } catch (err) {
       console.error('[AuthStore] Logout failed:', err);
       // Ensure state is cleared even if error occurs
       set({
         user: null,
-        token: null,
         isAuthenticated: false,
         isLoading: false
       });
@@ -276,54 +230,15 @@ signup: async (userData) => {
     }
   },
 
-// In useAuthStore.js
-fetchAllUsers: async () => {
-  set({ isfetchingUser: true, error: null });
-  try {
-    const response = await api.get("/api/v1/admin/users");
-    
-    // Ensure we're working with an array
-    const usersArray = Array.isArray(response.data.data) 
-      ? response.data.data 
-      : Array.isArray(response.data.data.users)
-        ? response.data.data.users
-        : [];
-    
-    set({ 
-      AllUsers: usersArray,
-      isfetchingUser: false 
-    });
-    return usersArray;
-  } catch (error) {
-    console.error('Failed to fetch users:', error);
-    set({ 
-      error: error.response?.data?.message || error.message, 
-      isfetchingUser: false 
-    });
-    throw error;
-  }
-},
 
   loadUser: async () => {
     console.debug('[AuthStore] Loading user session...');
     set({ isLoading: true });
     
     try {
-      const token = localStorage.getItem('token');
-      console.debug('[AuthStore] Token found in storage:', !!token);
-      
-      if (!token) {
-        console.debug('[AuthStore] No token found, skipping user load');
-        set({ isLoading: false });
-        return null;
-      }
-      
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      console.debug('[AuthStore] Authorization header set');
-      
-      const response = await api.get('/api/v1/users/me');
-       console.log(response.data.data.user.role);
-      console.debug('[AuthStore] User session response:', response.data);
+      const response = await api.get('/api/v1/users/me', {
+        withCredentials: true
+      });
       
       if (!response.data?.data?.user) {
         console.warn('[AuthStore] Invalid user data received');
@@ -332,19 +247,20 @@ fetchAllUsers: async () => {
 
       set({ 
         user: response.data.data.user,
-        token: token,
         isAuthenticated: true,
         isLoading: false
       });
-      
+
+      if (response.data.data.user.role === 'mentee') {
+      await get().fetchFeedbackHistory();
+    }
       console.debug('[AuthStore] User session loaded successfully');
+      
       return response.data.data.user;
     } catch (err) {
       console.error('[AuthStore] Load user error:', err);
-      localStorage.removeItem('token');
       set({ 
         user: null,
-        token: null,
         isAuthenticated: false,
         isLoading: false
       });
@@ -352,147 +268,360 @@ fetchAllUsers: async () => {
     }
   },
   
+  // *********************************** Admin related handling ************************************************
   updateProfile: async (data) => {
-  set({ isLoading: true, error: null });
-  
-  try {
-    // Ensure auth token is included
-    const token = localStorage.getItem('token');
-    if (!token) throw new Error('Authentication required');
-
-    const response = await api.patch('/api/v1/users/updateMe', data, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (!response.data?.data?.user) {
-      throw new Error('Invalid profile data received');
-    }
-
-    set({ 
-      user: response.data.data.user,
-      isLoading: false
-    });
+    set({ isLoading: true, error: null });
     
-    return response.data;
-  } catch (err) {
-    let errorMessage = 'Update failed';
-    if (err.response) {
-      errorMessage = err.response.data?.message || 
-                   err.response.statusText || 
-                   'Update failed';
+    try {
+      const response = await api.patch('/api/v1/users/updateMe', data, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        withCredentials: true
+      });
+
+      if (!response.data?.data?.user) {
+        throw new Error('Invalid profile data received');
+      }
+
+      set({ 
+        user: response.data.data.user,
+        isLoading: false
+      });
+      
+      return response.data;
+    } catch (err) {
+      let errorMessage = 'Update failed';
+      if (err.response) {
+        errorMessage = err.response.data?.message || 
+                     err.response.statusText || 
+                     'Update failed';
+      }
+      set({ error: errorMessage, isLoading: false });
+      throw err;
     }
-    set({ error: errorMessage, isLoading: false });
-    throw err;
+  },
+
+  
+  clearError: () => {
+    console.debug('[AuthStore] Clearing error');
+    set({ error: null });
+  },
+
+    fetchAllUsers: async () => {
+    set({ isfetchingUser: true, error: null });
+    try {
+      const response = await api.get("/api/v1/admin/users", {
+        withCredentials: true
+      });
+      
+      const usersArray = Array.isArray(response.data.data) 
+        ? response.data.data 
+        : Array.isArray(response.data.data.users)
+          ? response.data.data.users
+          : [];
+      
+      set({ 
+        AllUsers: usersArray,
+        isfetchingUser: false 
+      });
+      return usersArray;
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+      set({ 
+        error: error.response?.data?.message || error.message, 
+        isfetchingUser: false 
+      });
+      throw error;
+    }
+  },
+  // College Data Management Methods
+  fetchCollegeData: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.get('/api/v1/admin/college-data', {
+        withCredentials: true
+      });
+      
+      if (!response.data?.data) {
+        throw new Error('Invalid data format received');
+      }
+      return response.data.data;
+    } catch (error) {
+      console.error('Failed to fetch college data:', error);
+      set({ error: error.response?.data?.message || error.message });
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  deleteCollegeData: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.delete(`/api/v1/admin/college-data/${id}`, {
+        withCredentials: true
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('Failed to delete college data:', error);
+      set({ error: error.response?.data?.message || error.message });
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  updateCollegeData: async (id, data) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.patch(`/api/v1/admin/college-data/${id}`, data, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        withCredentials: true
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('Failed to update college data:', error);
+      set({ error: error.response?.data?.message || error.message });
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  uploadCollegeData: async (formData) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.post('/api/v1/admin/college-data/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        },
+        withCredentials: true
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('Failed to upload college data:', error);
+      set({ error: error.response?.data?.message || error.message });
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  //******************************* */ Feedback APIs Handling Here ****************************************************
+  
+
+// for public 
+
+getApprovedFeedbacks: async () => {
+  try {
+    const res = await api.get(`api/v1/public/feedback`);
+    return {
+      success: true,
+      data: res.data.data
+    };
+  } catch (err) {
+    console.error("Error fetching approved feedbacks:", err);
+    return {
+      success: false,
+      error: err.response?.data?.error || "Failed to fetch testimonials"
+    };
   }
 },
 
-/********************************************************************************************************* */
-
-purchasePremium: async (planType = 'premium') => {
-  console.debug('[AuthStore] Initiating purchase...');
-  set({ isLoading: true, error: null });
-  
+// for mentee
+// In useAuthStore.js
+fetchFeedbackHistory: async () => {
+  set({ loadingFeedback: true });
   try {
-    // Determine amount based on plan type
-    let amount = 299; // Default premium amount
-    if (planType === 'josaa') amount = 599;
-    if (planType === 'jac-delhi') amount = 399;
-    if (planType === 'uptac') amount = 399;
-    if (planType === 'whatsapp') amount = 999;
-
-    // Create order
-    const orderResponse = await api.post('/api/v1/payments/create-order', {
-      amount,
-      planType
+    const response = await api.get('/api/v1/mentee/feedbackHistory');
+    
+    // Handle different response structures
+    const feedbackData = response.data?.data || response.data || [];
+    
+    // Ensure we always have an array
+    const feedbackHistory = Array.isArray(feedbackData) 
+      ? feedbackData 
+      : [feedbackData].filter(Boolean);
+    
+    set({ 
+      feedbackHistory,
+      loadingFeedback: false 
     });
     
-    console.debug('[AuthStore] Order creation response:', orderResponse.data);
+    return feedbackHistory;
+  } catch (err) {
+    console.error('Feedback fetch error:', err);
+    set({ 
+      feedbackHistory: [],
+      loadingFeedback: false 
+    });
+    return [];
+  }
+},
+
+  // Update the submitFeedback method to add to local state
+  submitFeedback: async (feedbackData) => {
+    try {
+      const { message, category, starRating } = feedbackData;
+      const response = await api.post('/api/v1/mentee/feedback', {
+        message,
+        category,
+        starRating
+      });
+      
+      // Update local feedback history
+      set(state => ({
+        feedbackHistory: [response.data.feedback, ...state.feedbackHistory],
+        user: {
+          ...state.user,
+          feedbacks: [response.data.feedback._id, ...(state.user.feedbacks || [])]
+        }
+      }));
+      
+      return response.data;
+    } catch (err) {
+      throw new Error(err.response?.data?.message || "Failed to submit feedback");
+    }
+  },
+
+  // Add this method to your auth store
+// Add this method to your auth store
+editFeedback: async (feedbackId, feedbackData) => {
+  try {
+    const { message, category, starRating } = feedbackData;
+    const response = await api.patch(`/api/v1/mentee/editFeedback/${feedbackId}`, {
+      message,
+      category,
+      starRating
+    }, {
+      withCredentials: true
+    });
     
-    if (!orderResponse.data?.data?.key || !orderResponse.data?.data?.order) {
-      throw new Error('Invalid order data received');
-    }
+    // Update local feedback history
+    set(state => ({
+      feedbackHistory: state.feedbackHistory.map(fb => 
+        fb._id === feedbackId ? response.data.feedback : fb
+      )
+    }));
+    
+    return response.data;
+  } catch (err) {
+    throw new Error(err.response?.data?.message || "Failed to update feedback");
+  }
+},
 
-    // Load Razorpay script
-    const isScriptLoaded = await loadRazorpayScript();
-    if (!isScriptLoaded) {
-      throw new Error('Razorpay SDK failed to load');
-    }
+// In your useAuthStore.js
+updateFeedBackStatus: async (feedbackId, status) => {
+  try {
+    const res = await api.patch(`/api/v1/admin/feedback/${feedbackId}`, status);
+    return res.data;
+  } catch (err) {
+    throw new Error(err.response?.data?.message || "Failed to update feedback status");
+  }
+},
 
+AllFeedbackList: async (userId) => {
+  try {
+    const res = await api.get(`/api/v1/admin/feedback?userId=${userId}`);
+    return res.data;
+  } catch (err) {
+    throw new Error(err.response?.data?.message || "Failed to fetch feedbacks");
+  }
+},
+
+ startNotificationPolling: (interval = 30000) => {
+    // Clear existing interval if any
+    if (get().pollingInterval) {
+      clearInterval(get().pollingInterval);
+    }
+    
+    // Initial fetch
+    get().fetchNotifications();
+    
+    // Set up new interval
+    const intervalId = setInterval(() => {
+      if (get().user?.role === 'admin') {
+        get().fetchNotifications();
+      }
+    }, interval);
+    
+    set({ pollingInterval: intervalId });
+  },
+  
+  // Stop polling
+  stopNotificationPolling: () => {
+    if (get().pollingInterval) {
+      clearInterval(get().pollingInterval);
+      set({ pollingInterval: null });
+    }
+  },
+
+
+
+//***************************Payment Related API handling *********************************** */
+  createPaymentOrder: async (planId, couponCode = null) => {
+    set({ isLoading: true });
+    try {
+      const response = await api.post('/api/v1/payments/create-order', {
+        planId,
+        couponCode
+      }, {
+        withCredentials: true
+      });
+
+      return response.data;
+    } catch (err) {
+      console.error('Payment order creation failed:', err);
+      throw new Error(err.response?.data?.message || 'Failed to create payment order');
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  verifyPayment: async (paymentData) => {
+    set({ isLoading: true });
+    try {
+      const response = await api.post('/api/v1/payments/verify', paymentData, {
+        withCredentials: true
+      });
+
+      // Refresh user data after successful payment
+      await get().loadUser();
+
+      return response.data;
+    } catch (err) {
+      console.error('Payment verification failed:', err);
+      throw new Error(err.response?.data?.message || 'Payment verification failed');
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  initiateRazorpayPayment: async (orderData) => {
     return new Promise((resolve, reject) => {
       const options = {
-        key: orderResponse.data.data.key,
-        amount: orderResponse.data.data.order.amount,
-        currency: orderResponse.data.data.order.currency,
-        name: "CollegeSecrecy",
-        description: planType === 'premium' 
-          ? "Premium Membership" 
-          : `Counseling Plan: ${planType}`,
-        order_id: orderResponse.data.data.order.id,
+        key: process.env.RAZORPAY_KEY_ID,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "College Secracy",
+        description: `Purchase: ${orderData.planName}`,
+        order_id: orderData.orderId,
         handler: async function(response) {
           try {
-            console.debug('[AuthStore] Payment handler triggered:', response);
-            
-            // Verify payment
-            const verificationResponse = await api.post('/api/v1/payments/verify-payment', {
+            const verification = await get().verifyPayment({
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_order_id: response.razorpay_order_id,
               razorpay_signature: response.razorpay_signature,
-              planType
+              purchaseId: orderData.purchaseId
             });
-            
-            console.debug('[AuthStore] Payment verification response:', verificationResponse.data);
-            
-            // Update user state
-            set((state) => {
-              if (planType === 'premium') {
-                return {
-                  user: {
-                    ...state.user,
-                    premium: true,
-                    premiumSince: new Date().toISOString(),
-                    subscriptionPlan: 'premium'
-                  },
-                  isLoading: false
-                };
-              } else {
-                const updatedPlans = {
-                  ...state.user.counselingPlans,
-                  [planType]: {
-                    active: true,
-                    purchasedOn: new Date().toISOString(),
-                    validUntil: new Date(new Date().setMonth(new Date().getMonth() + (planType === 'whatsapp' || planType === 'josaa' ? 6 : 4))).toISOString(),
-                    paymentId: response.razorpay_payment_id,
-                    ...(planType === 'whatsapp' ? { 
-                      whatsappGroupLink: verificationResponse.data.data.whatsappLink 
-                    } : {})
-                  }
-                };
-                
-                return {
-                  user: {
-                    ...state.user,
-                    counselingPlans: updatedPlans
-                  },
-                  isLoading: false
-                };
-              }
-            });
-            
-            // Show success message
-            toast.success(
-              planType === 'premium'
-                ? 'Premium membership activated!'
-                : `Counseling plan activated! ${planType === 'whatsapp' ? 'WhatsApp group link sent to your mobile.' : ''}`
-            );
-            
-            resolve(verificationResponse.data);
+            resolve(verification);
           } catch (err) {
-            console.error('[AuthStore] Payment verification error:', err);
-            set({ error: 'Payment verification failed', isLoading: false });
-            toast.error(err.response?.data?.message || 'Payment verification failed');
             reject(err);
           }
         },
@@ -502,141 +631,367 @@ purchasePremium: async (planType = 'premium') => {
           contact: get().user?.phone || ''
         },
         theme: {
-          color: "#3399cc"
+          color: "#F37254"
         },
         modal: {
-          ondismiss: () => {
-            console.debug('[AuthStore] Payment modal dismissed');
-            set({ isLoading: false });
+          ondismiss: function() {
             reject(new Error('Payment window closed'));
           }
         }
       };
-      
+
       const rzp = new window.Razorpay(options);
       rzp.open();
     });
-  } catch (err) {
-    console.error('[AuthStore] Purchase error:', err);
-    set({ 
-      error: err.response?.data?.message || err.message || 'Payment failed', 
-      isLoading: false 
-    });
-    toast.error(err.response?.data?.message || 'Payment failed');
-    throw err;
-  }
-},
-
-//helper function to load Razorpay script
-loadRazorpayScript: () => {
-  return new Promise((resolve) => {
-    if (window.Razorpay) {
-      resolve(true);
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.onload = () => {
-      resolve(true);
-    };
-    script.onerror = () => {
-      resolve(false);
-    };
-    document.body.appendChild(script);
-  });
-},
-  
-  clearError: () => {
-    console.debug('[AuthStore] Clearing error');
-    set({ error: null });
   },
 
-/**************************************************************************************************************/
-
-// College Data Management Methods
-fetchCollegeData: async () => {
-  set({ isLoading: true, error: null });
-  try {
-    const response = await api.get('/api/v1/admin/college-data', {
-      headers: {
-        'Authorization': `Bearer ${get().token}`
-      }
-    });
-    
-    if (!response.data?.data) {
-      throw new Error('Invalid data format received');
+  // Admin payment methods
+  getAllTransactions: async () => {
+    if (get().user?.role !== 'admin') {
+      throw new Error('Unauthorized access');
     }
-    console.log(response.data.data);
-    return response.data.data;
-  } catch (error) {
-    console.error('Failed to fetch college data:', error);
-    set({ error: error.response?.data?.message || error.message });
-    throw error;
-  } finally {
-    set({ isLoading: false });
-  }
-},
 
-deleteCollegeData: async (id) => {
-  set({ isLoading: true, error: null });
+    set({ isLoading: true });
+    try {
+      const response = await api.get('/api/v1/admin/payments', {
+        withCredentials: true
+      });
+      return response.data;
+    } catch (err) {
+      console.error('Failed to fetch transactions:', err);
+      throw new Error(err.response?.data?.message || 'Failed to fetch transactions');
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  getTransactionDetails: async (paymentId) => {
+    if (get().user?.role !== 'admin') {
+      throw new Error('Unauthorized access');
+    }
+
+    set({ isLoading: true });
+    try {
+      const response = await api.get(`/api/v1/admin/payments/${paymentId}`, {
+        withCredentials: true
+      });
+      return response.data;
+    } catch (err) {
+      console.error('Failed to fetch transaction details:', err);
+      throw new Error(err.response?.data?.message || 'Failed to fetch transaction details');
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  fetchNotifications: async () => {
+    set({ loadingNotifications: true });
+    try {
+      const response = await api.get('/api/v1/admin/notifications', {
+        withCredentials: true
+      });
+      set({ 
+        notifications: response.data,
+        loadingNotifications: false 
+      });
+      //  console.log("Notication data :", response.data);
+      return response.data;
+    } catch (err) {
+      set({ loadingNotifications: false });
+      throw err;
+    }
+  },
+
+  // Mark notification as read
+  markNotificationAsRead: async (notificationId) => {
+    try {
+      const response = await api.patch(
+        `/api/v1/admin/notifications/${notificationId}/read`,
+        {},
+        { withCredentials: true }
+      );
+      
+      // Update local state
+      set(state => ({
+        notifications: state.notifications.map(n => 
+          n._id === notificationId ? { ...n, isRead: true } : n
+        )
+      }));
+      
+      return response.data;
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  // Get unread count (computed value)
+  getUnreadCount: () => {
+    return get().notifications.filter(n => !n.isRead).length;
+  },
+
+
+  // ******************************Plan Controller APIs *********************
+
+  
+  AddPlan : async (planData) => {
+    try {
+      const res = await api.post("/api/v1/admin/plans", planData);
+      return res.data;
+    } catch (err) {
+      throw new Error(err.response?.data?.error || "Failed to add plan");
+    }
+  },
+
+  // 2. Get Plans (optionally by Plantype)
+GetPlan: async (Plantype) => {
   try {
-    const response = await api.delete(`/api/v1/admin/college-data/${id}`, {
-      headers: {
-        'Authorization': `Bearer ${get().token}`
-      }
-    });
-    
-    return response.data;
-  } catch (error) {
-    console.error('Failed to delete college data:', error);
-    set({ error: error.response?.data?.message || error.message });
-    throw error;
-  } finally {
-    set({ isLoading: false });
+    const url = Plantype 
+      ? `/api/v1/admin/plans/${Plantype}` 
+      : `/api/v1/admin/plans`;
+    const response = await api.get(url);
+    return response.data; // This will now be the array of plans directly
+  } catch (err) {
+    throw new Error(err.response?.data?.error || "Failed to fetch plans");
   }
 },
 
-updateCollegeData: async (id, data) => {
-  set({ isLoading: true, error: null });
+menteeGetPlan: async (Plantype) => {
   try {
-    const response = await api.patch(`/api/v1/admin/college-data/${id}`, data, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${get().token}`
-      }
-    });
-    
-    return response.data;
-  } catch (error) {
-    console.error('Failed to update college data:', error);
-    set({ error: error.response?.data?.message || error.message });
-    throw error;
-  } finally {
-    set({ isLoading: false });
+    const url = Plantype 
+      ? `/api/v1/mentee/plans/${Plantype}` 
+      : `/api/v1/mentee/plans`;
+    const response = await api.get(url);
+     console.log('Plan response:', response);
+    return response.data; // This will now be the array of plans directly
+  } catch (err) {
+    throw new Error(err.response?.data?.error || "Failed to fetch plans");
   }
 },
 
-uploadCollegeData: async (formData) => {
-  set({ isLoading: true, error: null });
+  // 3. Update Plan
+  UpdatePlan: async (id, planData) => {
+    try {
+      const res = await api.patch(`/api/v1/admin/plans/update/${id}`, planData);
+      return res.data;
+    } catch (err) {
+      throw new Error(err.response?.data?.error || "Failed to update plan");
+    }
+  },
+
+  // 4. Delete Plan
+  DeletePlan: async (id) => {
+    try {
+      const res = await api.delete(`/api/v1/admin/plans/delete/${id}`);
+      return res.data;
+    } catch (err) {
+      throw new Error(err.response?.data?.error || "Failed to delete plan");
+    }
+  },
+
+  // *********************************** Events APIs handling ***********
+  // Add to useAuthStore.js
+// Event-related methods in useAuthStore
+fetchEvents: async (params = {}) => {
+  set({ isLoading: true });
+
   try {
-    const response = await api.post('/api/v1/admin/college-data/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        'Authorization': `Bearer ${get().token}`
-      }
+    const { status, type, from, to } = params;
+    let query = {};
+
+    if (status) query.status = status;
+    if (type) query.type = type;
+    if (from && to) {
+      query.date = {
+        $gte: new Date(from),
+        $lte: new Date(to),
+      };
+    }
+
+    const role = get().user?.role;
+    let endpoint = '/api/v1/events'; // default
+
+    // Use different endpoint based on role
+    if (role === 'mentee') {
+      endpoint = '/api/v1/mentee/events';
+    } else if (role === 'admin') {
+      endpoint = '/api/v1/admin/events';
+    }
+
+    const response = await api.get(endpoint, {
+      params: query,
+      withCredentials: true,
     });
-    
-    return response.data;
-  } catch (error) {
-    console.error('Failed to upload college data:', error);
-    set({ error: error.response?.data?.message || error.message });
-    throw error;
+
+    return response.data.events || [];
+
+  } catch (err) {
+    console.error('Failed to fetch events:', err);
+    throw new Error(err.response?.data?.message || 'Failed to fetch events');
   } finally {
     set({ isLoading: false });
   }
 },
 
+getEventById: async (eventId) => {
+  set({ isLoading: true });
+  try {
+    const role = get().user?.role;
+    let endpoint = `/api/v1/events/${eventId}`; // default
+
+    // Use role-specific endpoint if needed
+    if (role === 'mentee') {
+      endpoint = `/api/v1/mentee/events/${eventId}`;
+    } else if (role === 'admin') {
+      endpoint = `/api/v1/admin/events/${eventId}`;
+    }
+
+    const response = await api.get(endpoint, {
+      withCredentials: true
+    });
+
+    return response.data.event;
+  } catch (err) {
+    console.error('Failed to fetch event:', err);
+    throw new Error(err.response?.data?.message || 'Failed to fetch event');
+  } finally {
+    set({ isLoading: false });
+  }
+},
+
+fetchRegisteredEvents: async () => {
+  if (!get().isAuthenticated) return [];
+  
+  set({ isLoading: true });
+  try {
+    const response = await api.get('/api/v1/mentee/events/registered', {
+      withCredentials: true
+    });
+    return response.data.registeredEvents || [];
+  } catch (err) {
+    console.error('Failed to fetch registered events:', err);
+    throw new Error(err.response?.data?.message || 'Failed to fetch registered events');
+  } finally {
+    set({ isLoading: false });
+  }
+},
+
+registerForEvent: async (eventId) => {
+  set({ isLoading: true });
+  try {
+    const response = await api.post(`/api/v1/mentee/events/register/${eventId}`, {}, {
+      withCredentials: true
+    });
+    return response.data.registeredEvent;
+  } catch (err) {
+    console.error('Failed to register for event:', err);
+    throw new Error(err.response?.data?.message || 'Failed to register for event');
+  } finally {
+    set({ isLoading: false });
+  }
+},
+
+unregisterFromEvent: async (eventId) => {
+  set({ isLoading: true });
+  try {
+    await api.delete(`/api/v1/mentee/events/unregister/${eventId}`, {
+      withCredentials: true
+    });
+    return eventId;
+  } catch (err) {
+    console.error('Failed to unregister from event:', err);
+    throw new Error(err.response?.data?.message || 'Failed to unregister from event');
+  } finally {
+    set({ isLoading: false });
+  }
+},
+
+createEvent: async (eventData) => {
+  if (get().user?.role !== 'admin') {
+    throw new Error('Unauthorized');
+  }
+  
+  set({ isLoading: true });
+  try {
+    // Convert dates to ISO strings if they exist
+    if (eventData.date) eventData.date = new Date(eventData.date).toISOString();
+    if (eventData.endDate) eventData.endDate = new Date(eventData.endDate).toISOString();
+    
+    const response = await api.post('/api/v1/admin/events', eventData, {
+      withCredentials: true
+    });
+    return response.data.event;
+  } catch (err) {
+    console.error('Failed to create event:', err);
+    throw new Error(err.response?.data?.message || 'Failed to create event');
+  } finally {
+    set({ isLoading: false });
+  }
+},
+
+updateEvent: async (eventId, eventData) => {
+  if (get().user?.role !== 'admin') {
+    throw new Error('Unauthorized');
+  }
+  
+  set({ isLoading: true });
+  try {
+    // Convert dates to ISO strings if they exist
+    if (eventData.date) eventData.date = new Date(eventData.date).toISOString();
+    if (eventData.endDate) eventData.endDate = new Date(eventData.endDate).toISOString();
+    
+    const response = await api.patch(`/api/v1/admin/events/${eventId}`, eventData, {
+      withCredentials: true
+    });
+    return response.data.event;
+  } catch (err) {
+    console.error('Failed to update event:', err);
+    throw new Error(err.response?.data?.message || 'Failed to update event');
+  } finally {
+    set({ isLoading: false });
+  }
+},
+
+deleteEvent: async (eventId) => {
+  if (get().user?.role !== 'admin') {
+    throw new Error('Unauthorized');
+  }
+  
+  set({ isLoading: true });
+  try {
+    await api.delete(`/api/v1/admin/events/${eventId}`, {
+      withCredentials: true
+    });
+    return eventId;
+  } catch (err) {
+    console.error('Failed to delete event:', err);
+    throw new Error(err.response?.data?.message || 'Failed to delete event');
+  } finally {
+    set({ isLoading: false });
+  }
+},
+
+getEventAttendees: async (eventId) => {
+  if (get().user?.role !== 'admin') {
+    throw new Error('Unauthorized');
+  }
+  
+  set({ isLoading: true });
+  try {
+    const response = await api.get(`/api/v1/admin/events/${eventId}/attendees`, {
+      withCredentials: true
+    });
+    return response.data.attendees || [];
+  } catch (err) {
+    console.error('Failed to fetch attendees:', err);
+    throw new Error(err.response?.data?.message || 'Failed to fetch attendees');
+  } finally {
+    set({ isLoading: false });
+  }
+}
 }));
+
+
+
+
 
 export default useAuthStore;

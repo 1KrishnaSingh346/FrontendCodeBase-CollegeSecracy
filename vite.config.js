@@ -9,4 +9,13 @@ export default defineConfig({
       "@": path.resolve(__dirname, "src"), // ✅ This enables "@/lib/utils"
     },
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 });
