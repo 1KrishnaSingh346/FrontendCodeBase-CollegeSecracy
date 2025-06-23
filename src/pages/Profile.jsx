@@ -15,8 +15,8 @@ import imageCompression from "browser-image-compression";
 import toast from "react-hot-toast";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
-import TrackPlansAndTools from "./StudentPages/Components/TrackPlansAndTools";
-import AccountActionModal from "./StudentPages/Components/accountActionModal";
+import TrackPlansAndTools from "./StudentPages/Components/TrackPlansAndTools.jsx";
+import AccountActionModal from "./StudentPages/Components/AccountActionModal.jsx";
 
 const Profile = () => {
   const { user, logout, updateProfile, uploadProfilePic, loadUser,deleteAccount, deactivateAccount, userLogs, getMyLogs, initialAuthCheckComplete, isAuthenticated, removeProfilePicAPI } = useAuthStore();
