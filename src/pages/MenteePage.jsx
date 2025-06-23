@@ -11,7 +11,7 @@ import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import StarRating from './StudentPages/Components/StarRating.jsx';
 import ToolsSlider from "./StudentPages/Components/ToolSlider.jsx";
-import PaymentModal from './StudentPages/Components/paymentModal.jsx';
+import PaymentModal from './StudentPages/Components/PaymentModal.jsx';
 import Logo from "/Logo.webp";
 
 import { 
