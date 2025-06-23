@@ -4,6 +4,7 @@ import useAuthStore from '../../store/useAuthStore.js';
 import { FullScreenLoader } from '../../components/Loaders/script.js';
 import { ErrorBoundary as ErrorBoundaryReact } from "react-error-boundary";
 import NotificationDropdown from './components/NotificationDropdown.jsx';
+import { FiHome, FiUsers, FiClipboard, FiBarChart2, FiDatabase, FiSettings } from "react-icons/fi";
 
 // Enhanced Error Boundary Component
 const ErrorBoundary = ({ children }) => {
@@ -113,14 +114,19 @@ const AdminDashboard = () => {
     return <FullScreenLoader message="Verifying admin access..." />;
   }
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/authForm');
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
+const handleLogout = async () => {
+  try {
+    await logout();
+    // Store message before redirect
+    sessionStorage.setItem('logoutMessage', 'Logged out successfully 👋');
+    navigate('/');
+  } catch (err) {
+    toast.error('Logout failed. Please try again.', {
+      duration: 3000,
+      style: { background: '#D32F2F', color: '#fff' }
+    });
+  }
+};
 
   return (
     <ErrorBoundary>
@@ -172,83 +178,48 @@ const AdminDashboard = () => {
           </div>
           
           <nav className="mt-6 overflow-y-auto flex-1">
-            <NavItem 
-              icon={
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-              }
-              text="Dashboard"
-              active
-              sidebarOpen={sidebarOpen}
-              onClick={() => navigate('/admin')}
-            />
-            
-            <NavItem 
-              icon={
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              }
-              text="Manage Users"
-              sidebarOpen={sidebarOpen}
-              onClick={() => navigate('/admin/users')}
-            />
-
-            <NavItem 
-              icon={
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-              }
-              text="Manage Payment"
-              sidebarOpen={sidebarOpen}
-              onClick={() => navigate('/admin/plan-management')}
-            />
              <NavItem 
-              icon={
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-              }
-              text="Manage Events"
-              sidebarOpen={sidebarOpen}
-              onClick={() => navigate('/admin/event-management')}
-            />
+    icon={<FiHome className="w-6 h-6" />}
+    text="Dashboard"
+    active
+    sidebarOpen={sidebarOpen}
+    onClick={() => navigate('/admin')}
+  />
 
-            <NavItem 
-              icon={
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-              }
-              text="Payment Analytics"
-              sidebarOpen={sidebarOpen}
-              onClick={() => navigate('/admin/payment-analytics')}
-            />
-            
-            <NavItem 
-              icon={
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              }
-              text="Manage College Data"
-              sidebarOpen={sidebarOpen}
-              onClick={() => navigate('/admin/college-data')}
-            />
+  <NavItem 
+    icon={<FiUsers className="w-6 h-6" />}
+    text="Manage Users"
+    sidebarOpen={sidebarOpen}
+    onClick={() => navigate('/admin/users')}
+  />
 
-            <NavItem 
-              icon={
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c-.94 1.543.826 3.31 2.37 2.37a1.724 1.724 0 002.572 1.065c.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              }
-              text="Settings"
-              sidebarOpen={sidebarOpen}
-              onClick={() => navigate('/admin/settings')}
-            />
+  <NavItem 
+    icon={<FiClipboard className="w-6 h-6" />}
+    text="Manage Plans And Events"
+    sidebarOpen={sidebarOpen}
+    onClick={() => navigate('/admin/plan-event-management')}
+  />
+
+  <NavItem 
+    icon={<FiBarChart2 className="w-6 h-6" />}
+    text="Payment Analytics"
+    sidebarOpen={sidebarOpen}
+    onClick={() => navigate('/admin/payment-analytics')}
+  />
+
+  <NavItem 
+    icon={<FiDatabase className="w-6 h-6" />}
+    text="Manage College Data"
+    sidebarOpen={sidebarOpen}
+    onClick={() => navigate('/admin/college-data')}
+  />
+
+  <NavItem 
+    icon={<FiSettings className="w-6 h-6" />}
+    text="Settings"
+    sidebarOpen={sidebarOpen}
+    onClick={() => navigate('/admin/settings')}
+  />
           </nav>
         </div>
 
@@ -275,103 +246,65 @@ const AdminDashboard = () => {
               
               <nav className="mt-6 overflow-y-auto flex-1">
                 <NavItem 
-                  icon={
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                    </svg>
-                  }
-                  text="Dashboard"
-                  active
-                  sidebarOpen={true}
-                  onClick={() => {
-                    navigate('/admin');
-                    setMobileSidebarOpen(false);
-                  }}
-                />
-                
-                <NavItem 
-                  icon={
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                  }
-                  text="Manage Users"
-                  sidebarOpen={true}
-                  onClick={() => {
-                    navigate('/admin/users');
-                    setMobileSidebarOpen(false);
-                  }}
-                />
+  icon={<FiHome className="w-6 h-6" />}
+  text="Dashboard"
+  active
+  sidebarOpen={true}
+  onClick={() => {
+    navigate('/admin');
+    setMobileSidebarOpen(false);
+  }}
+/>
 
-                <NavItem 
-                  icon={
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                  }
-                  text="Manage Payment"
-                  sidebarOpen={true}
-                  onClick={() => {
-                    navigate('/admin/plan-management');
-                    setMobileSidebarOpen(false);
-                  }}
-                />
-                 <NavItem 
-                  icon={
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                  }
-                  text="Manage Events"
-                  sidebarOpen={true}
-                  onClick={() => {
-                    navigate('/admin/event-management');
-                    setMobileSidebarOpen(false);
-                  }}
-                />
+<NavItem 
+  icon={<FiUsers className="w-6 h-6" />}
+  text="Manage Users"
+  sidebarOpen={true}
+  onClick={() => {
+    navigate('/admin/users');
+    setMobileSidebarOpen(false);
+  }}
+/>
 
-                <NavItem 
-                  icon={
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                  }
-                  text="Payment Analytics"
-                  sidebarOpen={true}
-                  onClick={() => {
-                    navigate('/admin/payment-analytics');
-                    setMobileSidebarOpen(false);
-                  }}
-                />
+<NavItem 
+  icon={<FiClipboard className="w-6 h-6" />}
+  text="Manage Plans And Events"
+  sidebarOpen={true}
+  onClick={() => {
+    navigate('/admin/plan-event-management');
+    setMobileSidebarOpen(false);
+  }}
+/>
 
-                <NavItem 
-                  icon={
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                  }
-                  text="Manage College Data"
-                  sidebarOpen={true}
-                  onClick={() => {
-                    navigate('/admin/college-data');
-                    setMobileSidebarOpen(false);
-                  }}
-                />
-                
-                <NavItem 
-                  icon={
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c-.94 1.543.826 3.31 2.37 2.37a1.724 1.724 0 002.572 1.065c.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  }
-                  text="Settings"
-                  sidebarOpen={true}
-                  onClick={() => {
-                    navigate('/admin/settings');
-                    setMobileSidebarOpen(false);
-                  }}
-                />
+<NavItem 
+  icon={<FiBarChart2 className="w-6 h-6" />}
+  text="Payment Analytics"
+  sidebarOpen={true}
+  onClick={() => {
+    navigate('/admin/payment-analytics');
+    setMobileSidebarOpen(false);
+  }}
+/>
+
+<NavItem 
+  icon={<FiDatabase className="w-6 h-6" />}
+  text="Manage College Data"
+  sidebarOpen={true}
+  onClick={() => {
+    navigate('/admin/college-data');
+    setMobileSidebarOpen(false);
+  }}
+/>
+
+<NavItem 
+  icon={<FiSettings className="w-6 h-6" />}
+  text="Settings"
+  sidebarOpen={true}
+  onClick={() => {
+    navigate('/admin/settings');
+    setMobileSidebarOpen(false);
+  }}
+/>
               </nav>
             </div>
           </div>

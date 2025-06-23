@@ -2,11 +2,18 @@ import React from 'react';
 import api from '@/lib/axios.js';
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import 'swiper/css';
 import useAuthStore from '@/store/useAuthStore.js';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 import StarRating from './StudentPages/Components/StarRating.jsx';
-import Logo  from "/Logo.webp";
+import ToolsSlider from "./StudentPages/Components/ToolSlider.jsx";
+import PaymentModal from './StudentPages/Components/paymentModal.jsx';
+import Logo from "/Logo.webp";
+
 import { 
   FiLogOut, 
   FiInfo,
@@ -34,11 +41,18 @@ import {
   FiX,
   FiEdit2,
 } from 'react-icons/fi';
-import { SunIcon, MoonIcon, CalendarIcon, CheckCircleIcon,  SparklesIcon,
-  ArrowRightIcon,   ChevronDownIcon,
+import { 
+  SunIcon, 
+  MoonIcon, 
+  CalendarIcon, 
+  CheckCircleIcon,  
+  SparklesIcon,
+  ArrowRightIcon,   
+  ChevronDownIcon,
   BoltIcon,
-  LockClosedIcon, } from "@heroicons/react/24/solid";
-import { InitialLoader} from '../components/Loaders/script.js';
+  LockClosedIcon, 
+} from "@heroicons/react/24/solid";
+import { InitialLoader } from '../components/Loaders/script.js';
 import Footer from './StudentPages/Components/Footer.jsx';
 import YouTubeSlider from '@/components/YoutubeSlider.jsx';
 import QuoteComponent from './StudentPages/Components/QuoteComponent.jsx';
@@ -56,17 +70,15 @@ const MenteePage = () => {
     user, 
     loadUser, 
     logout, 
-     createPaymentOrder,
+    createPaymentOrder,
     initiateRazorpayPayment, 
-    loading, 
-    error,
-    menteeGetPlan,
-    updateProfile, 
-     feedbackHistory, 
-  loadingFeedback,
-  fetchFeedbackHistory,
-  editFeedback,
-  submitFeedback ,
+    isLoading,
+    menteeGetPlan, 
+    feedbackHistory, 
+    loadingFeedback,
+    fetchFeedbackHistory,
+    editFeedback,
+    submitFeedback,
     initializeAuth,
     initialAuthCheckComplete
   } = useAuthStore();
@@ -78,117 +90,90 @@ const MenteePage = () => {
     bio: '',
     profilePic: null
   });
-const [feedback, setFeedback] = useState({
-  rating: 0,
-  message: '',
-  category: 'general' // default category
-});
-
-
+  const [feedback, setFeedback] = useState({
+    rating: 0,
+    message: '',
+    category: 'general'
+  });
   const [hoverRating, setHoverRating] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [activeTab, setActiveTab] = useState('events');
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  // Add this to your existing state declarations
-const [editingFeedback, setEditingFeedback] = useState(false);
+  const [showBundleDetails, setShowBundleDetails] = useState(false);
+  const [editingFeedback, setEditingFeedback] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
     const savedMode = localStorage.getItem('darkMode');
     if (savedMode !== null) return JSON.parse(savedMode);
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
-    const [showPremiumToolsModal, setShowPremiumToolsModal] = useState(false);
+  const [showPremiumToolsModal, setShowPremiumToolsModal] = useState(false);
+  const [paymentModalItem, setPaymentModalItem] = useState(null);
+  const [paymentModalType, setPaymentModalType] = useState('tool');
+  const [paymentStatus, setPaymentStatus] = useState('idle');
   
-    
-    {/* State for plans */}
-    const [counselingPlans, setCounselingPlans] = useState([]);
-    const [premiumTools, setPremiumTools] = useState([]);
-    const [loadingPlans, setLoadingPlans] = useState(true);
-    const [errorPlans, setErrorPlans] = useState(null);
+  // State for plans
+  const [counselingPlans, setCounselingPlans] = useState([]);
+  const [premiumTools, setPremiumTools] = useState([]);
+  const [loadingPlans, setLoadingPlans] = useState(true);
+  const [errorPlans, setErrorPlans] = useState(null);
 
-    // Fetch plans on component mount
-    useEffect(() => {
-      const fetchPlans = async () => {
-        try {
-          setLoadingPlans(true);
-          const counsellingData = await menteeGetPlan('counselling');
-          const toolsData = await menteeGetPlan('tool');
-          if (counsellingData) {
-            setCounselingPlans(counsellingData);
-          }
-          if(toolsData)
-          {
-            setPremiumTools(toolsData);
-          }
-        } catch (err) {
-          setErrorPlans(err.message || 'Failed to fetch plans');
-          console.error('Error fetching plans:', err);
-        } finally {
-          setLoadingPlans(false);
-        }
-      };
+  console.log("Intital auth value : ", initialAuthCheckComplete);
+useEffect(() => {
+  if (!initialAuthCheckComplete) {
+    initializeAuth();
+  }
+}, [initializeAuth, initialAuthCheckComplete]);
 
-      fetchPlans();
-    }, []);
+useEffect(() => {
+  if (user) {
+    setProfileData({
+      fullName: user.fullName || '',
+      bio: user.bio || '',
+      profilePic: user.profilePic?.url || ''
+    });
+  }
+}, [user]);
 
-  // Initialize auth and load user data
+
+
+  // Fetch plans on component mount
   useEffect(() => {
-    if (!initialAuthCheckComplete) {
-      initializeAuth();
-    } else if (!user) {
-      loadUser();
-    } else {
-      setProfileData({
-        fullName: user.fullName || '',
-        bio: user.bio || '',
-        profilePic: user.profilePic || ''
-      });
-      if (user) {
-         fetchFeedbackHistory();
+    const fetchPlans = async () => {
+      try {
+        setLoadingPlans(true);
+        const counsellingData = await menteeGetPlan('counselling');
+        const toolsData = await menteeGetPlan('tool');
+        
+        if (counsellingData) {
+          setCounselingPlans(counsellingData);
+        }
+        if (toolsData) {
+          setPremiumTools(toolsData);
+        }
+      } catch (err) {
+        setErrorPlans(err.message || 'Failed to fetch plans');
+        console.error('Error fetching plans:', err);
+        toast.error('Failed to load plans. Please try again later.');
+      } finally {
+        setLoadingPlans(false);
       }
-    }
-  }, [user, loadUser, initializeAuth, initialAuthCheckComplete, fetchFeedbackHistory]);
+    };
+
+    fetchPlans();
+  }, []);
+
+
 
   const profileRef = useRef(null);
   const navigate = useNavigate();
 
-  // Premium Tools bundle
-  // discount given
-const Discount = 30;
-const total = premiumTools.reduce((sum, tool) => sum + tool.price, 0);
-const discountedPrice = Math.round(total * (1 - Discount / 100));
-const savings = Math.round(total * (Discount / 100));
-
-  const events = [
-    {
-      id: 1,
-      title: "JEE Advanced Strategy Webinar",
-      date: "2023-11-15",
-      time: "18:00",
-      type: "online",
-      description: "Learn advanced strategies from top rankers for JEE Advanced preparation",
-      registrationLink: "#"
-    },
-    {
-      id: 2,
-      title: "Campus Tour: IIT Bombay",
-      date: "2023-11-20",
-      time: "10:00",
-      type: "offline",
-      description: "Guided tour of IIT Bombay campus with current students",
-      registrationLink: "#"
-    },
-    {
-      id: 3,
-      title: "Stress Management Workshop",
-      date: "2023-11-25",
-      time: "15:00",
-      type: "online",
-      description: "Techniques to manage exam stress and anxiety",
-      registrationLink: "#"
-    }
-  ];
+  // Premium Tools bundle calculations
+  const Discount = 30;
+  const total = premiumTools.reduce((sum, tool) => sum + tool.price, 0);
+  const discountedPrice = Math.round(total * (1 - Discount / 100));
+  const savings = Math.round(total * (Discount / 100));
 
   // Important links
   const importantLinks = [
@@ -237,7 +222,6 @@ const savings = Math.round(total * (Discount / 100));
     }
   }, [darkMode]);
 
-
   // Handle click outside profile dropdown
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -257,136 +241,167 @@ const savings = Math.round(total * (Discount / 100));
     const newMode = !darkMode;
     setDarkMode(newMode);
     localStorage.setItem('darkMode', JSON.stringify(newMode));
+    toast.success(`Switched to ${newMode ? 'dark' : 'light'} mode`);
   };
 
   const handleMenuToggle = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
- const handlePurchase = async (planId) => {
-    try {
-      // Step 1: Create order
-      console.log("PlanId:", planId);
-      const plan = counselingPlans.find(p => p._id === planId);
-      const tool = premiumTools.find(p => p._id === planId);
+  const handlePurchaseClick = (item, type) => {
+    setPaymentModalItem(item);
+    setPaymentModalType(type);
+  };
 
-      if (plan) 
-      {
-          console.log("Plan Title : ",plan.title);
+  const handlePurchase = async (planId, couponCode = '') => {
+    try {
+       setPaymentStatus('initiating');
+      const orderResponse = await createPaymentOrder(planId, couponCode);
+
+      if (!orderResponse.success) {
+        toast.error(orderResponse.message || 'Failed to create payment order');
+        setPaymentModalItem(null);
+        return;
       }
-      else if(tool)
-        {
-          console.log("Plan Title : ", tool.title);
-        } 
-      else 
-      {
-          console.log('Plan not found');
+
+      const orderData = orderResponse.data;
+      setPaymentStatus('waiting');
+const result = await initiateRazorpayPayment(orderData, {
+  onPaymentSuccess: () => setPaymentStatus('verifying')
+});
+
+      
+      if (result.success) {
+        toast.success('Payment successful!', {
+          duration: 4000,
+          icon: '🎉',
+          style: {
+            background: '#4BB543',
+            color: '#fff',
+          }
+        });
+        
+        await loadUser();
+        setPaymentStatus('success');
+        setPaymentModalItem(null);
+        
+        const purchasedItem = counselingPlans.concat(premiumTools).find(p => p._id === planId);
+        if (purchasedItem) {
+          toast.success(
+            purchasedItem.Plantype === 'tool' 
+              ? `${purchasedItem.title} tool unlocked successfully!` 
+              : `${purchasedItem.title} plan activated successfully!`,
+            { 
+              duration: 5000,
+              icon: '🔓',
+              style: {
+                background: '#4BB543',
+                color: '#fff',
+              }
+            }
+          );
+        }
+      } else {
+        setPaymentStatus('error');
+        toast.error(result.message || "Payment failed or cancelled", {
+          duration: 4000,
+          icon: '❌',
+          style: {
+            background: '#FF3333',
+            color: '#fff',
+          }
+        });
       }
-      if(planId == "premium-bundle")
-      {
-        // To do
-          // as premium-bundle schema is not in database so do here manually in premium bundle jitne bhi preimum tools and sab ki plan_id for purchase and database mei jb pruchase ho jaye to vaha jabhi ki planid to ho hi aur sath mei ye bhi ho ko premium bundle kharida hai isne jb amdin fetch kare
-      }
-      const orderData = await createPaymentOrder(planId);
-      
-      // Step 2: Open Razorpay checkout and handle payment
-      const result = await initiateRazorpayPayment(orderData);
-      
-      // Payment was successful
-      toast.success('Payment successful!');
-      toast.success('Tool unlocked successfully!');
-      setShowPremiumToolsModal(false);
-      // Optional: Refresh user data to get updated premium status
-      await loadUser();
-      
     } catch (err) {
-      toast.error(err.message || 'Payment failed');
+      console.error('Payment error:', err);
+      setPaymentStatus('error');
+      toast.error(err.message || 'Payment failed. Please try again.', {
+        duration: 4000,
+        icon: '❌',
+        style: {
+          background: '#FF3333',
+          color: '#fff',
+        }
+      });
+      // setPaymentModalItem(null);
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    toast.success('Logged out successfully');
+const handleLogout = async () => {
+  try {
+    await logout();
+    // Store message before redirect
+    sessionStorage.setItem('logoutMessage', 'Logged out successfully 👋');
     navigate('/');
-  };
+  } catch (err) {
+    toast.error('Logout failed. Please try again.', {
+      duration: 3000,
+      style: { background: '#D32F2F', color: '#fff' }
+    });
+  }
+};
+
 
   const handleProfileToggle = () => {
     setIsProfileOpen(!isProfileOpen);
   };
 
-  const handleEditToggle = () => {
-    setIsEditing(!isEditing);
-  };
 
-  const handleProfileChange = (e) => {
+  const handleFeedbackChange = (e) => {
     const { name, value } = e.target;
-    setProfileData(prev => ({ ...prev, [name]: value }));
+    setFeedback(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileData(prev => ({ ...prev, profilePic: reader.result }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleProfileSubmit = async (e) => {
+  const handleFeedbackSubmit = async (e) => {
     e.preventDefault();
-    try {
-      await updateProfile(profileData);
-      toast.success('Profile updated successfully');
-      setIsEditing(false);
-    } catch (err) {
-      toast.error(err.message || 'Failed to update profile');
-    }
-  };
-
-const handleFeedbackChange = (e) => {
-  const { name, value } = e.target;
-  setFeedback(prev => ({ ...prev, [name]: value }));
-};
-
-  const handleRatingClick = (rating) => {
-    setFeedback(prev => ({ ...prev, rating }));
-  };
-
-// Update the feedback submit handler
-// Update the handleFeedbackSubmit function
-const handleFeedbackSubmit = async (e) => {
-  e.preventDefault();
-  setIsSubmitting(true);
-  
-  try {
-    if (editingFeedback && feedbackHistory?.length > 0) {
-      // Editing existing feedback
-      await editFeedback(feedbackHistory[0]._id, {
-        message: feedback.message,
-        category: feedback.category,
-        starRating: feedback.rating
-      });
-      toast.success('Feedback updated successfully! It will be reviewed again by our team.');
-    } else {
-      // Creating new feedback
-      await submitFeedback({
-        message: feedback.message,
-        category: feedback.category,
-        starRating: feedback.rating
-      });
-      toast.success('Feedback submitted successfully! Our team will review it shortly.');
-    }
+    setIsSubmitting(true);
     
-    setEditingFeedback(false);
-    fetchFeedbackHistory(); // Refresh the feedback list
-  } catch (err) {
-    toast.error(err.message || 'Failed to submit feedback');
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+    try {
+      if (editingFeedback && feedbackHistory?.length > 0) {
+        await editFeedback(feedbackHistory[0]._id, {
+          message: feedback.message,
+          category: feedback.category,
+          starRating: feedback.rating
+        });
+        toast.success('Feedback updated successfully! It will be reviewed again by our team.', {
+          duration: 4000,
+          icon: '🔄',
+          style: {
+            background: '#4BB543',
+            color: '#fff',
+          }
+        });
+      } else {
+        await submitFeedback({
+          message: feedback.message,
+          category: feedback.category,
+          starRating: feedback.rating
+        });
+        toast.success('Feedback submitted successfully! Our team will review it shortly.', {
+          duration: 4000,
+          icon: '📩',
+          style: {
+            background: '#4BB543',
+            color: '#fff',
+          }
+        });
+      }
+      
+      setEditingFeedback(false);
+      fetchFeedbackHistory();
+    } catch (err) {
+      toast.error(err.message || 'Failed to submit feedback. Please try again.', {
+        duration: 4000,
+        icon: '❌',
+        style: {
+          background: '#FF3333',
+          color: '#fff',
+        }
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const scrollToSection = (sectionId) => {
     const element = document.getElementById(sectionId);
@@ -395,53 +410,14 @@ const handleFeedbackSubmit = async (e) => {
     }
   };
 
-  const handleEventRegister = (eventId) => {
-    toast.success(`Registered for event! We'll send you details soon.`);
-    setSelectedEvent(null);
-  };
 
-    // Check if a tool is purchased
-  const isToolPurchased = (toolId) => {
-    return user?.premiumTools?.includes(toolId);
-  };
 
+  const isToolPurchased = (toolId) =>
+    user?.premiumTools?.some(
+      (t) => t.toolId?._id?.toString() === toolId?.toString() && t.active
+    );
 
   if (!user || !initialAuthCheckComplete) return <InitialLoader />;
-
-  const PlanStatusCard = ({ plan, user }) => {
-    if (!user.counselingPlans?.[plan]) return null;
-
-    const planData = user.counselingPlans[plan];
-    const isValid = new Date(planData.validUntil) > new Date();
-
-    return (
-      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="font-medium text-gray-900 dark:text-white capitalize">
-              {plan.replace(/([A-Z])/g, ' $1')} Plan
-            </h3>
-            <p className={`text-sm ${isValid ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
-              {isValid ? 'Active' : 'Expired'} - Valid until {new Date(planData.validUntil).toLocaleDateString()}
-            </p>
-          </div>
-          {isValid && plan === 'whatsapp' && planData.whatsappGroupLink && (
-            <a 
-              href={planData.whatsappGroupLink} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-sm bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-3 py-1 rounded-full"
-            >
-              Join Group
-            </a>
-          )}
-        </div>
-        <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-          Purchased on {new Date(planData.purchasedOn).toLocaleDateString()}
-        </div>
-      </div>
-    );
-  };
 
   return (
     <motion.div 
@@ -505,20 +481,17 @@ const handleFeedbackSubmit = async (e) => {
                   onClick={handleProfileToggle}
                   className="flex items-center space-x-2 focus:outline-none"
                 >
-                  {user.profilePic ? (
+                  {user.profilePic?.url ?(
                     <img 
-                      src={user.profilePic} 
+                      src={user.profilePic.url} 
                       alt="Profile" 
-                      className="w-8 h-8 rounded-full object-cover"
+                      className="w-10 h-10 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-orange-500 to-blue-600 flex items-center justify-center text-white">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-blue-600 flex items-center justify-center text-white">
                       <FiUser />
                     </div>
                   )}
-                  <span className="text-gray-700 dark:text-gray-300 text-sm">
-                    {user.fullName}
-                  </span>
                 </button>
 
                 {isProfileOpen && (
@@ -537,13 +510,6 @@ const handleFeedbackSubmit = async (e) => {
                       >
                         <FiUser className="mr-2" />
                         View Profile
-                      </button>
-                      <button
-                        onClick={handleEditToggle}
-                        className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left transition-colors"
-                      >
-                        <FiSettings className="mr-2" />
-                        Edit Profile
                       </button>
                       <button
                         onClick={handleLogout}
@@ -602,13 +568,6 @@ const handleFeedbackSubmit = async (e) => {
               View Profile
             </button>
             <button
-              onClick={() => { handleEditToggle(); setIsMenuOpen(false); }}
-              className="flex items-center w-full px-3 py-2 rounded-md text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-            >
-              <FiSettings className="mr-2" />
-              Edit Profile
-            </button>
-            <button
               onClick={() => { handleLogout(); setIsMenuOpen(false); }}
               className="flex items-center w-full px-3 py-2 rounded-md text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
@@ -621,198 +580,314 @@ const handleFeedbackSubmit = async (e) => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Banner */}
-        <motion.div 
-          variants={fadeIn}
-          className="bg-gradient-to-r from-orange-500 to-blue-600 rounded-xl overflow-hidden shadow-lg mb-8 relative"
-        >
-          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80')] bg-cover bg-center opacity-20"></div>
-          <div className="relative z-10 p-6 sm:p-8 md:p-10 text-white">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
-              Welcome back, {user.fullName.split(' ')[0]}!
-            </h1>
-            <p className="text-sm sm:text-base md:text-lg opacity-90 max-w-2xl">
-              {user.premium 
-                ? "You have full access to all premium tools and resources."
-                : "Upgrade to premium to unlock all study tools and counseling services."}
-            </p>
-          </div>
-        </motion.div>
-
-{/* Dashboard Grid */}
-<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-  {/* Dashboard Stats - Full width on mobile, then takes normal space */}
-  <div className="md:col-span-1 lg:col-span-1">
-    <DashboardStats user={user} />
+<motion.div
+  initial={{ opacity: 0 }}
+  animate={{ opacity: 1 }}
+  transition={{ duration: 0.6 }}
+  className="relative overflow-hidden rounded-2xl mb-6 min-h-[14rem] sm:min-h-[16rem] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700"
+>
+  {/* Enhanced SVG Background - More Visible in Both Modes */}
+  <div className="absolute inset-0 opacity-[0.18] dark:opacity-[0.12]">
+    {/* Bold Book Stack */}
+    <svg 
+      className="absolute -right-8 -top-4 h-64 w-64 sm:h-80 sm:w-80 text-indigo-400/70 dark:text-indigo-900/60"
+      viewBox="0 0 200 200"
+    >
+      <path d="M30,30 L170,30 L150,80 L50,80 Z" fill="currentColor" stroke="currentColor" strokeWidth="1.5"/>
+      <path d="M20,90 L180,90 L160,140 L40,140 Z" fill="currentColor" stroke="currentColor" strokeWidth="1.5"/>
+      <path d="M10,150 L190,150 L170,190 L30,190 Z" fill="currentColor" stroke="currentColor" strokeWidth="1.5"/>
+    </svg>
+    
+    {/* Bold Graduation Cap */}
+    <svg 
+      className="absolute -left-8 -bottom-4 h-60 w-60 sm:h-72 sm:w-72 text-blue-400/70 dark:text-blue-900/60"
+      viewBox="0 0 200 200"
+    >
+      <path d="M50,120 L150,120 L130,170 L70,170 Z" fill="currentColor" stroke="currentColor" strokeWidth="1.5"/>
+      <path d="M80,70 L120,70 L100,120 L100,120 Z" fill="currentColor" stroke="currentColor" strokeWidth="1.5"/>
+    </svg>
+    
+    {/* Bold Growth Chart */}
+    <svg 
+      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-72 w-72 text-emerald-400/70 dark:text-emerald-900/60"
+      viewBox="0 0 200 200"
+    >
+      <path d="M30,170 L50,120 L70,150 L90,100 L110,130 L130,80 L150,110 L170,60" 
+        stroke="currentColor" 
+        strokeWidth="4" 
+        fill="none"
+        strokeLinecap="round"
+      />
+      <circle cx="50" cy="120" r="6" fill="currentColor" />
+      <circle cx="110" cy="130" r="6" fill="currentColor" />
+      <circle cx="170" cy="60" r="6" fill="currentColor" />
+    </svg>
   </div>
 
-
-<motion.div 
-  variants={fadeIn}
-  className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden md:col-span-1 lg:col-span-1"
->
-  <div className="p-6">
-    <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
-      <FiTool className="mr-2 text-blue-500" />
-      Quick Actions
-    </h2>
-    
-    <div className="grid grid-cols-2 gap-3">
-      {/* Free Tools */}
-      <DashboardButton
-        icon={<FiBook className="text-blue-500" />}
-        label="Resources"
-        onClick={() => navigate(`/${user.role}-dashboard/resources`)}
-      />
-      <DashboardButton
-        icon={<FiBarChart2 className="text-purple-500" />}
-        label="Progress"
-        onClick={() => navigate(`/${user.role}-dashboard/progress`)}
-      />
-            <DashboardButton
-        icon={<FiBarChart2 className="text-purple-500" />}
-        label="Mock Tests"
-        onClick={() => navigate(`/${user.role}-dashboard/tests`)}
-      />
+  {/* Content Container */}
+  <div className="relative z-10 h-full flex flex-col justify-center p-6 sm:p-8">
+    <motion.div
+      initial={{ y: 10, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ delay: 0.3 }}
+      className="max-w-2xl mx-auto w-full"
+    >
+      <h1 className="text-2xl sm:text-3xl font-bold mb-3 text-gray-900 dark:text-white">
+        Welcome back, <span className="text-indigo-600 dark:text-indigo-400">{user.fullName.split(' ')[0]}</span>!
+      </h1>
       
-      {/* Premium Tools - Conditionally disabled */}
-      {premiumTools.filter(tool => ['study-planner', 'branch-comparison'].includes(tool.link)).map(tool => (
-        <DashboardButton
-          key={tool._id}
-          icon={tool.link === 'study-planner' ? 
-            <FiCalendar className="text-orange-500" /> : 
-            <FiAward className="text-green-500" />}
-          label={tool.title}
-          onClick={() => {
-            if (user.premiumTools?.includes(tool._id)) {
-              navigate(`/${user.role}-dashboard/tools/${tool.link}`);
-            } else {
-              setShowPremiumToolsModal(true);
-              scrollToSection('tools-section');
-            }
-          }}
-          disabled={!user.premiumTools?.includes(tool._id)}
-        />
-      ))}
-    </div>
+      <motion.p
+        initial={{ y: 10, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        className="text-gray-700 dark:text-gray-300 text-base sm:text-lg leading-relaxed mb-4 sm:mb-6"
+      >
+        We're excited to continue this learning journey with you. Discover new resources, track your progress, and achieve your educational goals with our comprehensive platform.
+      </motion.p>
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.7 }}
+        className="flex items-center gap-3 text-gray-600 dark:text-gray-400 text-sm sm:text-base"
+      >
+        <svg className="h-5 w-5 flex-shrink-0 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        </svg>
+        <span className="text-sm">Your personalized learning dashboard is ready</span>  
+      </motion.div>
+    </motion.div>
   </div>
 </motion.div>
 
-  {/* Popular Tools & Resources Section - Full width on all screens, but properly aligned in grid */}
-{/* Popular Tools & Resources Section */}
-<motion.div 
-  variants={fadeIn}
-  className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden border-2 border-gray-200 dark:border-gray-700 md:col-span-2 lg:col-span-1"
->
-  <div className="p-5 sm:p-6">
-    <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
-      <SparklesIcon className="h-5 w-5 mr-2 text-orange-500" />
-      Popular Tools for You
-    </h2>
-    
-    {/* Dynamic Tools Grid */}
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-      {premiumTools.slice(0, 3).map((tool) => (
-        <div 
-          key={tool._id}
-          className="flex flex-col bg-gray-50 dark:bg-gray-700 p-2 rounded-lg border border-gray-200 dark:border-gray-600 h-full hover:shadow-md transition-shadow cursor-pointer"
-          onClick={() => {
-            if (isToolPurchased(tool._id)) {
-              navigate(`/${user.role}-dashboard/tools/${tool.link}`);
-            } else {
-              setShowPremiumToolsModal(true);
-              scrollToSection('tools-section');
-            }
-          }}
-        >
-          <div className="flex items-center mb-2">
-            <div className={`p-2 rounded-lg mr-3 ${
-              isToolPurchased(tool._id)
-                ? 'bg-green-100 dark:bg-green-900/30 text-green-500 dark:text-green-400'
-                : 'bg-orange-100 dark:bg-orange-900/30 text-orange-500 dark:text-orange-400'
-            }`}>
-              <SparklesIcon className=" h-4 w-4" />
-            </div>
-            <h3 className="font-medium text-gray-900 dark:text-white text-xs md:text-xs">
-              {tool.title}
-              {isToolPurchased(tool._id) && (
-                <span className="ml-1 text-xs text-green-600 dark:text-green-400">✓</span>
-              )}
-            </h3>
+        {/* Dashboard Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {/* Dashboard Stats */}
+          <div className="md:col-span-1">
+            <DashboardStats user={user} loading={loadingPlans} />
           </div>
-          <p className="text-xs sm:text-xs text-gray-600 dark:text-gray-300 mt-auto">
-            {tool.description}
-          </p>
-          {!isToolPurchased(tool._id) && (
-            <div className="mt-2 text-xs text-orange-600 dark:text-orange-400 flex items-center">
-              <FiLock className="mr-1" /> Premium Feature
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-    
-    {/* Testimonial Card */}
-    <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 mb-4 border border-orange-200 dark:border-orange-800">
-      <div className="flex items-start">
-        <div className="flex-shrink-0 pt-0.5 text-orange-500 dark:text-orange-400">
-          <FiStar className="h-4 w-4" />
-        </div>
-        <div className="ml-3">
-          <p className="text-xs sm:text-sm italic text-gray-800 dark:text-gray-200">
-            "This platform helped me understand the counselling process better..."
-          </p>
-          <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-            - JEE Aspirant, 2023
-          </p>
-        </div>
-      </div>
-    </div>
-    
-    {/* Counselling Tip */}
-    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-4 border border-blue-200 dark:border-blue-800">
-      <div className="flex items-start">
-        <div className="flex-shrink-0 pt-0.5 text-blue-500 dark:text-blue-400">
-          <FiInfo className="h-4 w-4" />
-        </div>
-        <div className="ml-3">
-          <h3 className="font-medium text-blue-800 dark:text-blue-200 mb-1 text-sm sm:text-base">
-            Counselling Tip
-          </h3>
-          <p className="text-xs sm:text-sm text-blue-700 dark:text-blue-300">
-            During CSAB counselling, keep 2-3 safety options in your preferred branches.
-          </p>
-        </div>
-      </div>
-    </div>
-    
-    {/* Getting Started Guide */}
-    <div>
-      <h3 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center text-sm sm:text-base">
-        <BoltIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-orange-500" />
-        How to Get Started
-      </h3>
-      <ol className="space-y-3">
-        {[
-          "Explore the tools section to find helpful calculators",
-          "Check the events calendar for upcoming webinars",
-          "Review important links for official counselling websites",
-          "Bookmark helpful resources for quick access"
-        ].map((item, index) => (
-          <li key={index} className="flex items-start">
-            <span className="flex-shrink-0 bg-gray-200 dark:bg-gray-600 rounded-full h-5 w-5 flex items-center justify-center mr-3 text-xs font-medium mt-0.5">
-              {index + 1}
-            </span>
-            <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">{item}</span>
-          </li>
-        ))}
-      </ol>
-    </div>
-  </div>
-</motion.div>
-</div>
 
- 
+          {/* Quick Actions + Premium Shortcuts */}
+          <motion.div
+            variants={fadeIn}
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden md:col-span-1 border border-gray-200 dark:border-gray-700"
+          >
+            <div className="p-5 sm:p-6">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <FiTool className="mr-2 text-blue-500" /> Quick Actions
+              </h2>
+
+              <div className="grid grid-cols-2 gap-4">
+                {loadingPlans
+                  ? Array(4).fill().map((_, idx) => (
+                      <div
+                        key={idx}
+                        className="flex flex-col items-start justify-start space-y-1 border border-gray-300 dark:border-gray-700 rounded-xl p-3 bg-gray-50 dark:bg-gray-700"
+                      >
+                        <Skeleton circle width={28} height={28} />
+                        <Skeleton width="80%" height={10} />
+                      </div>
+                    ))
+                  : (
+                      <>
+                        {/* Free Tools */}
+                        <DashboardButton
+                          icon={<FiBook className="text-blue-500" />}
+                          label="Resources"
+                          onClick={() => navigate(`/${user.role}-dashboard/resources`)}
+                        />
+                        <DashboardButton
+                          icon={<FiBarChart2 className="text-purple-500" />}
+                          label="Progress"
+                          onClick={() => navigate(`/${user.role}-dashboard/progress`)}
+                        />
+                        <DashboardButton
+                          icon={<FiBarChart2 className="text-purple-500" />}
+                          label="Mock Tests"
+                          onClick={() => navigate(`/${user.role}-dashboard/tests`)}
+                        />
+
+                        {/* Premium Tools */}
+                        {premiumTools
+                          .filter(tool => ['study-planner', 'branch-comparison'].includes(tool.link))
+                          .map(tool => {
+                            const isToolActive = user.premiumTools?.some(
+                              t => t.toolId?._id?.toString() === tool._id?.toString() && t.active
+                            );
+
+                            return (
+                              <div key={tool._id} className="relative group">
+                                <DashboardButton
+                                  icon={
+                                    tool.link === 'study-planner' ? (
+                                      <FiCalendar className="text-orange-500" />
+                                    ) : (
+                                      <FiAward className="text-green-500" />
+                                    )
+                                  }
+                                  label={tool.title}
+                                  onClick={() =>
+                                    isToolActive
+                                      ? navigate(`/${user.role}-dashboard/tools/${tool.link}`)
+                                      : (setShowPremiumToolsModal(true), scrollToSection('tools-section'))
+                                  }
+                                  disabled={!isToolActive}
+                                />
+                                {!isToolActive && (
+                                  <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 group-hover:opacity-100 transition duration-300 pointer-events-none shadow-lg z-30">
+                                    Upgrade to use this tool
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </>
+                    )}
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Popular Tools + Tips */}
+          <motion.div
+            variants={fadeIn}
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700 md:col-span-2 lg:col-span-1"
+          >
+            <div className="p-5 sm:p-6">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <SparklesIcon className="h-5 w-5 mr-2 text-orange-500" />
+                Popular Tools for You
+              </h2>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                {loadingPlans
+                  ? Array(3).fill().map((_, index) => (
+                      <div
+                        key={index}
+                        className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700"
+                      >
+                        <div className="flex items-center mb-3">
+                          <div className="mr-3">
+                            <Skeleton circle height={32} width={32} />
+                          </div>
+                          <div className="flex-1">
+                            <Skeleton height={12} width="80%" />
+                          </div>
+                        </div>
+                        <Skeleton height={10} width="60%" />
+                        <div className="mt-3">
+                          <Skeleton height={8} width="50%" />
+                        </div>
+                      </div>
+                    ))
+                  : premiumTools.slice(0, 3).map(tool => {
+                      const purchased = isToolPurchased(tool._id);
+                      return (
+                        <div
+                          key={tool._id}
+                          className={`relative group flex flex-col justify-between cursor-pointer bg-gray-50 dark:bg-gray-700 p-4 rounded-xl border h-full transition-shadow ${
+                            purchased
+                              ? 'hover:shadow-md border-green-300 dark:border-green-600'
+                              : 'hover:shadow-sm border-orange-300 dark:border-orange-600'
+                          }`}
+                          onClick={() =>
+                            purchased
+                              ? navigate(`/${user.role}-dashboard/tools/${tool.link}`)
+                              : (setShowPremiumToolsModal(true), scrollToSection('tools-section'))
+                          }
+                        >
+                          <div className="flex items-center mb-2">
+                            <div
+                              className={`p-2 md:p-0 rounded-lg mr-3 ${
+                                purchased
+                                  ? 'bg-green-100 dark:bg-green-900/30 text-green-500 dark:text-green-400'
+                                  : 'bg-orange-100 dark:bg-orange-900/30 text-orange-500 dark:text-orange-400'
+                              }`}
+                            >
+                              <SparklesIcon className="h-4 w-4" />
+                            </div>
+                            <h3 className="font-medium text-gray-900 dark:text-white md:text-xs text-sm">
+                              {tool.title}
+                            </h3>
+                          </div>
+
+                          <div className="mt-3 text-xs flex items-center">
+                            {purchased ? (
+                              <div className="text-green-600 dark:text-green-400 flex items-center">
+                                <FiCheckCircle className="mr-1 h-4 w-4" />
+                                Access Tool
+                              </div>
+                            ) : (
+                              <div className="text-orange-600 dark:text-orange-400 flex items-center">
+                                <FiLock className="mr-1 h-4 w-4" />
+                                Premium Feature
+                              </div>
+                            )}
+                          </div>
+
+                          {!purchased && (
+                            <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-[10px] rounded-md px-2 py-1 opacity-0 group-hover:opacity-100 transition duration-300 pointer-events-none z-30 shadow-lg">
+                              Unlock with Premium Plan
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+              </div>
+
+              {/* Testimonial */}
+              <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 mb-4 border border-orange-200 dark:border-orange-800">
+                <div className="flex items-start">
+                  <FiStar className="h-4 w-4 text-orange-500 dark:text-orange-400" />
+                  <div className="ml-3">
+                    <p className="text-sm italic text-gray-800 dark:text-gray-200">
+                      "This platform helped me understand the counselling process better..."
+                    </p>
+                    <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">- JEE Aspirant, 2023</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Counselling Tip */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-4 border border-blue-200 dark:border-blue-800">
+                <div className="flex items-start">
+                  <FiInfo className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+                  <div className="ml-3">
+                    <h3 className="font-medium text-blue-800 dark:text-blue-200 mb-1 text-sm">
+                      Counselling Tip
+                    </h3>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      During CSAB counselling, keep 2–3 safety options in your preferred branches.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Getting Started Guide */}
+              <div>
+                <h3 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center text-sm sm:text-base">
+                  <BoltIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-orange-500" />
+                  How to Get Started
+                </h3>
+                <ol className="space-y-3">
+                  {[
+                    'Explore the tools section to find helpful calculators',
+                    'Check the events calendar for upcoming webinars',
+                    'Review important links for official counselling websites',
+                    'Bookmark helpful resources for quick access',
+                  ].map((item, index) => (
+                    <li key={index} className="flex items-start">
+                      <span className="flex-shrink-0 bg-gray-300 dark:bg-gray-600 rounded-full h-5 w-5 flex items-center justify-center mr-3 text-xs font-medium mt-0.5">
+                        {index + 1}
+                      </span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{item}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
 <motion.section 
   id='counselling-section'
   className="md:py-8 py-6 bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 relative overflow-hidden"
@@ -858,12 +933,45 @@ const handleFeedbackSubmit = async (e) => {
       </motion.p>
     </div>
 
-    {/* Loading state */}
-    {loadingPlans && (
-      <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+   {loadingPlans && (
+  <>
+    {/* Mobile View - Horizontal Scroll Skeletons */}
+    <div className="md:hidden overflow-x-auto scrollbar-hide pb-6 px-4">
+      <div className="flex space-x-4 w-max">
+        {[1, 2, 3].map((_, i) => (
+          <div
+            key={i}
+            className="w-72 flex-shrink-0 rounded-2xl overflow-hidden shadow-xl backdrop-blur-md bg-white/70 dark:bg-gray-800/70 p-6 space-y-4 min-h-[480px]"
+          >
+            <Skeleton height={20} width={100} baseColor="#f3f4f6" highlightColor="#e5e7eb" />
+            <Skeleton height={28} width="60%" baseColor="#f3f4f6" highlightColor="#e5e7eb" />
+            <Skeleton height={20} width="80%" baseColor="#f3f4f6" highlightColor="#e5e7eb" />
+            <Skeleton height={60} baseColor="#f3f4f6" highlightColor="#e5e7eb" />
+            <Skeleton count={4} baseColor="#f3f4f6" highlightColor="#e5e7eb" />
+            <Skeleton height={40} width="100%" borderRadius={8} baseColor="#f3f4f6" highlightColor="#e5e7eb" />
+          </div>
+        ))}
       </div>
-    )}
+    </div>
+
+    {/* Desktop View - Grid Skeletons */}
+    <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-6 py-8">
+      {[1, 2, 3].map((_, i) => (
+        <div
+          key={i}
+          className="rounded-2xl overflow-hidden shadow-xl backdrop-blur-md bg-white/70 dark:bg-gray-800/70 p-6 space-y-4 min-h-[480px]"
+        >
+          <Skeleton height={20} width={100} baseColor="#f3f4f6" highlightColor="#e5e7eb" />
+          <Skeleton height={28} width="60%" baseColor="#f3f4f6" highlightColor="#e5e7eb" />
+          <Skeleton height={20} width="80%" baseColor="#f3f4f6" highlightColor="#e5e7eb" />
+          <Skeleton height={60} baseColor="#f3f4f6" highlightColor="#e5e7eb" />
+          <Skeleton count={4} baseColor="#f3f4f6" highlightColor="#e5e7eb" />
+          <Skeleton height={40} width="100%" borderRadius={8} baseColor="#f3f4f6" highlightColor="#e5e7eb" />
+        </div>
+      ))}
+    </div>
+  </>
+)}
 
     {/* Error state */}
     {errorPlans && !loadingPlans && (
@@ -878,121 +986,218 @@ const handleFeedbackSubmit = async (e) => {
       </div>
     )}
 
-    {/* Mobile View - Horizontal Scroll */}
-    {!loadingPlans && !errorPlans && counselingPlans.length > 0 && (
-      <>
-        <div className="md:hidden overflow-x-auto scrollbar-hide pb-6">
-          <div className="flex space-x-6 w-max px-4">
-            {counselingPlans.map((plan, index) => (
-              <motion.div 
-                key={plan._id}
-                whileHover={{ scale: 1.02 }}
-                className={`w-72 flex-shrink-0 rounded-2xl overflow-hidden shadow-xl backdrop-blur-sm bg-white/70 dark:bg-gray-800/70 border border-white/20 dark:border-gray-700/50 ${plan.highlight ? 'ring-2 ring-orange-500' : ''}`}
-                initial={{ opacity: 0, x: 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-              >
-                <div className="p-6 h-full flex flex-col">
-                  {plan.tag && (
-                    <div className="bg-gradient-to-r md:text-base text-sm from-orange-500 to-orange-600 text-white font-bold px-3 py-1 rounded-full w-max mb-4 shadow-lg backdrop-blur-sm">
-                      {plan.tag}
-                    </div>
-                  )}
-                  <h3 className="md:text-xl text-lg font-bold text-gray-900 dark:text-white mb-3">{plan.title}</h3>
-                  <div className="md:text-3xl text-base font-bold text-orange-600 dark:text-orange-400 mb-4">
-                      {'₹'}{plan.price}
-                    <span className="md:text-sm text-xs text-gray-500 dark:text-gray-400">/package</span>
-                  </div>
-                  {plan.sessions && (
-                    <div className="flex items-center mb-4 bg-white/50 dark:bg-gray-700/50 px-3 py-2 rounded-lg backdrop-blur-sm">
-                      <FiCalendar className="md:h-5 h-4 w-4 md:w-5 mr-2 text-orange-500" />
-                      <span className="text-gray-700 dark:text-gray-300 md:text-sm text-xs">{plan.sessions}</span>
-                    </div>
-                  )}
-                  <ul className="space-y-3 mb-6">
-                    {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-start">
-                        <FiCheckCircle className="md:h-5 md:w-5 h-3 w-3 text-green-500 flex-shrink-0 mt-0.5 mr-2" />
-                        <span className="text-gray-700 dark:text-gray-300 md:text-sm text-xs">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <button 
-                    onClick={() => handlePurchase(plan._id)}
-                    className={`mt-auto md:text-base text-sm w-full md:py-3 md:px-4 py-2 px-2 rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-xl flex items-center justify-center backdrop-blur-sm ${
-                      plan.highlight 
-                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white' 
-                        : 'bg-white/80 dark:bg-gray-700/80 hover:bg-white dark:hover:bg-gray-600 text-gray-800 dark:text-white'
-                    }`}
-                  >
-                    {plan.highlight ? 'Get Premium' : 'Choose Plan'}
-                    <FiArrowRight className="h-4 w-4 ml-2" />
-                  </button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
+{/* Mobile View - Horizontal Scroll */}
+{!loadingPlans && !errorPlans && counselingPlans.length > 0 && (
+  <div className="md:hidden overflow-x-auto scrollbar-hide pb-6 px-4">
+    <div className="flex space-x-4 w-max">
+      {counselingPlans.map((plan, index) => {
+        const isPurchased = user?.counselingPlans?.some(
+          (p) => p?.planId?._id?.toString() === plan._id?.toString() && p?.active
+        );
 
-        {/* Desktop View - Grid Layout */}
-        <div className="hidden md:block overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-hide px-4">
-          <div className="inline-flex space-x-6 min-w-max">
-            {counselingPlans.map((plan, index) => (
-              <motion.div 
-                key={plan._id}
-                whileHover={{ y: -5, scale: 1.02 }}
-                className={`snap-center w-[320px] transition-transform duration-300 ease-in-out transform rounded-xl overflow-hidden shadow-lg backdrop-blur-sm bg-white/70 dark:bg-gray-800/70 border border-white/20 dark:border-gray-700/50 hover:shadow-xl ${
-                  plan.highlight ? 'scale-[1.02] z-10 border-2 border-orange-500' : ''
-                }`}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-              >
-                <div className="p-6 flex flex-col h-full">
-                  {plan.tag && (
-                    <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-xs font-bold px-3 py-1 rounded-full w-max mb-4 shadow-lg backdrop-blur-sm">
-                      {plan.tag}
-                    </div>
-                  )}
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">{plan.title}</h3>
-                  <div className="text-3xl font-bold text-orange-600 dark:text-orange-400 mb-4">
-                    {'₹'}{plan.price}
-                    <span className="text-sm text-gray-500 dark:text-gray-400">/package</span>
-                  </div>
-                  {plan.sessions && (
-                    <div className="flex items-center mb-4 bg-white/50 dark:bg-gray-700/50 px-3 py-2 rounded-lg backdrop-blur-sm">
-                      <CalendarIcon className="h-5 w-5 mr-2 text-orange-500" />
-                      <span className="text-gray-700 dark:text-gray-300 text-sm">{plan.sessions}</span>
-                    </div>
-                  )}
-                  <ul className="space-y-3 mb-6 flex-1 overflow-hidden">
-                    {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-start">
-                        <CheckCircleIcon className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5 mr-2" />
-                        <span className="text-gray-700 dark:text-gray-300 text-sm">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <button 
-                    onClick={() => handlePurchase(plan._id)}
-                    className={`mt-auto w-full py-3 px-4 rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-xl flex items-center justify-center backdrop-blur-sm ${
-                      plan.highlight 
-                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white' 
-                        : 'bg-white/80 dark:bg-gray-700/80 hover:bg-white dark:hover:bg-gray-600 text-gray-800 dark:text-white'
-                    }`}
-                  >
-                    {plan.highlight ? 'Get Premium' : 'Choose Plan'}
-                    <ArrowRightIcon className="h-4 w-4 ml-2" />
-                  </button>
+        const purchasedPlan = user?.counselingPlans?.find(
+          (p) => p?.planId?._id?.toString() === plan._id?.toString() && p?.active
+        );
+
+        const expiry = purchasedPlan?.planId?.expiryDate
+          ? new Date(purchasedPlan.planId.expiryDate).toLocaleDateString('en-IN', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+            })
+          : null;
+
+        return (
+          <motion.div
+            key={plan._id}
+            whileHover={{ scale: 1.02 }}
+            className={`relative w-72 flex-shrink-0 min-h-[480px] flex flex-col justify-between rounded-2xl overflow-hidden shadow-xl backdrop-blur-md bg-white/70 dark:bg-gray-800/70 border border-white/20 dark:border-gray-700/50 ${
+              plan.highlight ? 'ring-2 ring-orange-500' : ''
+            }`}
+            initial={{ opacity: 0, x: 20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: index * 0.1 }}
+            viewport={{ once: true }}
+          >
+{plan.tag && (
+  <div className="absolute top-0 -left-2 z-10">
+    {/* Ribbon main strip */}
+    <div className="bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-r-md shadow-md">
+      {plan.tag}
+    </div>
+
+    {/* Triangle tail below */}
+    <div className="w-0 h-0 border-t-[10px] border-l-[10px] border-t-orange-500 border-l-transparent"></div>
+  </div>
+)}
+
+
+
+            <div className="p-6 flex flex-col space-y-4 h-full">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{plan.title}</h3>
+
+              <div className="text-xl font-bold text-orange-600 dark:text-orange-400">
+                ₹{plan.price}
+                <span className="text-sm text-gray-500 dark:text-gray-300 font-medium"> /package</span>
+              </div>
+
+              {plan.sessions && (
+                <div className="flex items-center bg-white/50 dark:bg-gray-700/50 px-3 py-2 rounded-lg">
+                  <FiCalendar className="h-4 w-4 mr-2 text-orange-500" />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{plan.sessions}</span>
                 </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </>
-    )}
+              )}
+
+              <ul className="space-y-2 text-sm text-gray-800 dark:text-gray-300 min-h-[110px]">
+                {plan.features.map((feature, i) => (
+                  <li key={i} className="flex items-start">
+                    <FiCheckCircle className="h-4 w-4 text-green-500 mt-1 mr-2" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+
+              {isPurchased && (
+                <div className="text-xs bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-300 px-3 py-1 rounded">
+                  ✅ Purchased {expiry && `– Valid till ${expiry}`}
+                </div>
+              )}
+
+              <div className="mt-auto">
+                <button
+                  onClick={() => !isPurchased && handlePurchaseClick(plan, 'plan')}
+                  disabled={isPurchased}
+                  className={`w-full py-2 px-4 mt-4 rounded-lg text-sm font-medium transition duration-300 shadow-md hover:shadow-xl flex items-center justify-center ${
+                    isPurchased
+                      ? 'bg-green-500 text-white cursor-not-allowed'
+                      : plan.highlight
+                      ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white'
+                      : 'bg-white/80 dark:bg-gray-700/80 hover:bg-white dark:hover:bg-gray-600 text-gray-800 dark:text-white'
+                  }`}
+                >
+                  {isPurchased
+                    ? 'Already Purchased'
+                    : plan.highlight
+                    ? 'Get Premium'
+                    : 'Choose Plan'}
+                  {!isPurchased && <FiArrowRight className="h-4 w-4 ml-2" />}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        );
+      })}
+    </div>
+  </div>
+)}
+
+
+{/* Swiper Slider – Desktop View */}
+<div className="hidden md:block px-6 py-8">
+  <Swiper
+    spaceBetween={24}
+    slidesPerView={1}
+    breakpoints={{
+      768: { slidesPerView: 2 },
+      1024: { slidesPerView: 3 },
+    }}
+  >
+    {counselingPlans.map((plan, index) => {
+      const isPlanPurchased = user?.counselingPlans?.some(
+        (p) => p?.planId?._id?.toString() === plan._id?.toString() && p?.active
+      );
+
+      const purchasedPlan = user?.counselingPlans?.find(
+        (p) => p?.planId?._id?.toString() === plan._id?.toString() && p?.active
+      );
+
+      const expiry = purchasedPlan?.planId?.expiryDate
+        ? new Date(purchasedPlan.planId.expiryDate).toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          })
+        : null;
+
+      return (
+        <SwiperSlide key={plan._id}>
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            className={`relative w-[320px] min-h-[500px] mx-auto flex flex-col justify-between rounded-2xl overflow-hidden shadow-xl backdrop-blur-lg bg-white/10 dark:bg-white/5 border border-white/20 dark:border-gray-600 transition-all duration-300 ${
+              plan.highlight ? 'ring-2 ring-orange-500' : ''
+            }`}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: index * 0.1 }}
+            viewport={{ once: true }}
+          >
+            {/* Tag */}
+            {plan.tag && (
+              <div className="absolute top-0 left-0 bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-br-xl z-10 shadow-md">
+                {plan.tag}
+              </div>
+            )}
+
+            {/* Card Content */}
+            <div className="p-6 flex flex-col space-y-3 h-full">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{plan.title}</h3>
+
+              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                ₹{plan.price}
+                <span className="text-sm text-gray-500 dark:text-gray-300 font-medium"> /package</span>
+              </div>
+
+              {plan.sessions && (
+                <div className="flex items-center bg-white/30 dark:bg-gray-700/40 px-3 py-1.5 rounded-lg">
+                  <FiCalendar className="h-4 w-4 mr-2 text-orange-500" />
+                  <span className="text-sm text-gray-700 dark:text-gray-200">{plan.sessions}</span>
+                </div>
+              )}
+
+              <ul className="space-y-2 text-sm text-gray-800 dark:text-gray-300">
+                {plan.features.map((feature, i) => (
+                  <li key={i} className="flex items-start">
+                    <FiCheckCircle className="h-4 w-4 text-green-500 mt-1 mr-2" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+
+              {isPlanPurchased && (
+                <div className="text-xs bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 px-3 py-1 rounded">
+                  ✅ Purchased {expiry && `– Valid till ${expiry}`}
+                </div>
+              )}
+            </div>
+
+            {/* CTA Button */}
+            <div className="p-6 pt-0">
+              <button
+                onClick={() => !isPlanPurchased && handlePurchaseClick(plan, 'plan')}
+                disabled={isPlanPurchased}
+                className={`w-full py-2 px-4 rounded-lg text-sm font-medium transition duration-300 shadow-md hover:shadow-xl flex items-center justify-center ${
+                  isPlanPurchased
+                    ? 'bg-green-500 text-white cursor-not-allowed'
+                    : plan.highlight
+                    ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white'
+                    : 'bg-white/80 dark:bg-gray-700/70 hover:bg-white dark:hover:bg-gray-600 text-gray-900 dark:text-white'
+                }`}
+              >
+                {isPlanPurchased
+                  ? 'Already Purchased'
+                  : plan.highlight
+                  ? 'Get Premium'
+                  : 'Choose Plan'}
+                {!isPlanPurchased && <FiArrowRight className="h-4 w-4 ml-2" />}
+
+              </button>
+            </div>
+          </motion.div>
+        </SwiperSlide>
+      );
+    })}
+  </Swiper>
+</div>
 
     {/* No plans available */}
     {!loadingPlans && !errorPlans && counselingPlans.length === 0 && (
@@ -1004,21 +1209,6 @@ const handleFeedbackSubmit = async (e) => {
         </p>
       </div>
     )}
-
-    {/* Active Plans */}
-    {user.counselingPlans && (
-      <div className="mt-12">
-        <h3 className="text-xl font-bold text-center text-gray-900 dark:text-white mb-6">
-          Your Active Counseling Plans
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <PlanStatusCard plan="josaa" user={user} />
-          <PlanStatusCard plan="jacDelhi" user={user} />
-          <PlanStatusCard plan="uptac" user={user} />
-          <PlanStatusCard plan="whatsapp" user={user} />
-        </div>
-      </div>
-    )}
   </div>
 </motion.section>
 
@@ -1026,7 +1216,7 @@ const handleFeedbackSubmit = async (e) => {
         <YouTubeSlider/>
 
         {/* Event Calendar & Workshops Section */}
-        <motion.section
+        {/* <motion.section
           id="events-section"
           variants={fadeIn}
           className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden mb-8"
@@ -1095,7 +1285,7 @@ const handleFeedbackSubmit = async (e) => {
               </div>
             </div>
           </div>
-        </motion.section>
+        </motion.section> */}
 
         {/* Health & Wellness Section */}
         <motion.section
@@ -1203,247 +1393,184 @@ const handleFeedbackSubmit = async (e) => {
             </div>
           </div>
         </motion.section>
-    
-{/* Tools Section - Enhanced */}
-{/* Tools Section - Enhanced */}
+
+  {/* Tool Section  */}
 <motion.section 
   id="tools-section"
   variants={fadeIn}
   className="bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-xl overflow-hidden mb-8 border border-gray-100 dark:border-gray-700"
 >
   <div className="p-4 md:p-8">
-    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-8">
-      <div className="mb-4 md:mb-0">
-        <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-orange-500 to-orange-600 text-white mb-3">
+    {/* Header */}
+    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-10">
+      <div>
+        <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-orange-500 to-orange-600 text-white mb-3 shadow-sm">
           PREMIUM TOOLS
         </div>
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white leading-tight">
           Powerful Study <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-blue-600">Tools</span>
         </h2>
-        <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mt-2 max-w-2xl">
+        <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mt-2 max-w-xl">
           Access our premium tools designed to optimize your preparation
         </p>
       </div>
-      {!user.premium && (
-        <button 
-          onClick={() => setShowPremiumToolsModal(true)}
-          className="w-full md:w-auto px-4 py-2 md:px-6 md:py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 transition-all shadow-lg hover:shadow-xl text-sm md:text-base"
-        >
-          Unlock All Tools
-        </button>
-      )}
     </div>
-    
-    <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-      {/* Free Tools */}
-      <ToolCard 
-        title="Rank Calculator"
-        description="Calculate expected rank based on marks"
-        icon={<FiBarChart2 className="text-blue-500" />}
-        onClick={() => navigate(`/${user.role}-dashboard/tools/rank-calculator`)}
-        isFree={true}
-      />
-      <ToolCard 
-        title="Percentile Calculator"
-        description="Estimate JEE Main percentile"
-        icon={<FiPercent className="text-purple-500" />}
-        onClick={() => navigate(`/${user.role}-dashboard/tools/percentile-calculator`)}
-        isFree={true}
-      />
-      <ToolCard 
-        title="CGPA Calculator"
-        description="Calculate CGPA from percentage"
-        icon={<FiDollarSign className="text-green-500" />}
-        onClick={() => navigate(`/${user.role}-dashboard/tools/cgpa-calculator`)}
-        isFree={true}
-      />
-      
-      {/* Premium Tools */}
-      {user?.premiumTools?.map(toolId => {
-        const tool = premiumTools.find(t => t._id === toolId);
-        if (!tool) return null;
-        
-        return (
-          <ToolCard 
-            key={tool._id}
-            title={tool.title}
-            description={tool.description}
-            icon={<SparklesIcon className="text-orange-500" />}
-            onClick={() => navigate(`/${user.role}-dashboard/tools/${tool.link}`)}
-            isPremium={true}
-          />
-        );
-      })}
-      
-      {/* Unlock Card */}
-      <ToolCard 
-        title="Unlock Premium"
-        description="Get all advanced study tools"
-        icon={<SparklesIcon className="text-orange-500" />}
-        onClick={() => setShowPremiumToolsModal(true)}
-        isLocked={true}
-      />
-    </div>
+
+    {/* ✅ Use the slider component here */}
+    <ToolsSlider 
+      user={user}
+      navigate={navigate}
+      setShowPremiumToolsModal={setShowPremiumToolsModal}
+    />
   </div>
 </motion.section>
 
-{/* Responsive Premium Tools Modal */}
 <AnimatePresence>
   {showPremiumToolsModal && (
-    <motion.div 
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4"
+    <motion.div
+      className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-2 sm:p-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={() => setShowPremiumToolsModal(false)}
     >
-      <motion.div 
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] scrollbar-hide overflow-y-auto border border-gray-200 dark:border-gray-700"
+      <motion.div
+        className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] scrollbar-hide overflow-y-auto border border-gray-200 dark:border-gray-600"
         initial={{ scale: 0.95, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.95, y: 20 }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-orange-500 to-blue-600 p-4 sm:p-6 rounded-t-xl">
-          <div className="flex justify-between items-center">
+        <div className="relative rounded-t-2xl overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#FF7A00] to-[#3A8DFF] opacity-90" />
+          <div className="relative z-10 p-4 sm:p-6 flex justify-between items-center backdrop-blur-sm">
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-white">Premium Tools</h2>
-              <p className="text-orange-100 mt-1 text-sm sm:text-base">
-                Unlock powerful tools to boost your preparation
+              <h2 className="text-xl md:text-3xl font-extrabold text-white tracking-wide">
+                {loadingPlans ? (
+                  <div className="w-48 h-6 bg-white/30 rounded animate-pulse" />
+                ) : (
+                  'Premium Tools'
+                )}
+              </h2>
+              <p className="text-xs md:text-base text-orange-100 mt-1 font-medium">
+                {loadingPlans ? (
+                  <div className="w-60 h-4 bg-white/20 rounded mt-1 animate-pulse" />
+                ) : (
+                  'Unlock powerful tools to boost your preparation'
+                )}
               </p>
             </div>
-            <button 
+            <button
               onClick={() => setShowPremiumToolsModal(false)}
-              className="text-white hover:text-orange-200 transition-colors p-1"
+              className="text-white hover:text-orange-200 transition-colors p-2 rounded-full border border-white/20 hover:bg-white/10"
             >
-              <FiX size={24} />
+              <FiX size={22} />
             </button>
           </div>
         </div>
-        
-        <div className="p-4 sm:p-6">
-          {/* Tool Grid - Responsive */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-            {premiumTools.map((tool) => (
-              <div 
-                key={tool._id}
-                id={`tool-${tool._id}`}
-                className={`relative overflow-hidden rounded-lg sm:rounded-xl border ${
-                  isToolPurchased(tool._id)
-                    ? 'border-green-500/30 bg-green-50/50 dark:bg-green-900/10'
-                    : 'border-gray-200 dark:border-gray-700 hover:border-orange-400 dark:hover:border-orange-500'
-                } transition-all duration-300`}
-              >
-                {/* Ribbon for purchased tools */}
-                {isToolPurchased(tool._id) && (
-                  <div className="absolute top-0 right-0 bg-green-500 text-white text-xs font-bold px-2 py-0.5 sm:px-3 sm:py-1 transform rotate-45 translate-x-8 translate-y-3 sm:translate-y-4 w-28 sm:w-32 text-center">
-                    Purchased
-                  </div>
-                )}
-                
-                <div className="p-4 sm:p-5">
-                  <div className="flex items-start mb-3 sm:mb-4">
-                    <div className={`p-2 sm:p-3 rounded-lg mr-3 sm:mr-4 ${
-                      isToolPurchased(tool._id)
-                        ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
-                        : 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400'
-                    }`}>
-                      <SparklesIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-                    </div>
-                    <div>
-                      <h3 className={`font-bold text-sm sm:text-base ${
-                        isToolPurchased(tool._id)
-                          ? 'text-green-700 dark:text-green-300'
-                          : 'text-gray-900 dark:text-white'
-                      }`}>
-                        {tool.title}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mt-1">
-                        {tool.description}
-                      </p>
+
+        {/* Content */}
+        <div className="p-4 sm:p-6 space-y-6 max-h-[65vh] overflow-y-auto scrollbar-hide">
+          {loadingPlans ? (
+            // Skeleton Grid
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="relative overflow-hidden rounded-xl border bg-white/50 dark:bg-transparent border-gray-400 dark:border-gray-600 p-4 sm:p-5 animate-pulse"
+                >
+                  <div className="flex items-start mb-3 gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-orange-100 dark:bg-orange-900/40" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 w-3/4 bg-gray-300 dark:bg-gray-700 rounded" />
+                      <div className="h-3 w-5/6 bg-gray-200 dark:bg-gray-600 rounded" />
                     </div>
                   </div>
-                  
-                  {isToolPurchased(tool._id) ? (
-                    <button
-                      onClick={() => {
-                        setShowPremiumToolsModal(false);
-                        navigate(`/${user.role}-dashboard/tools/${tool.link}`);
-                      }}
-                      className="w-full py-2 px-3 sm:px-4 bg-green-100 hover:bg-green-200 dark:bg-green-900/50 dark:hover:bg-green-900 text-green-700 dark:text-green-300 rounded-md sm:rounded-lg font-medium transition-colors flex items-center justify-center text-xs sm:text-sm"
-                    >
-                      <FiCheckCircle className="mr-2 h-3 w-3 sm:h-4 sm:w-4" /> Access Tool
-                    </button>
-                  ) : (
-                    <div className="flex justify-between items-center mt-3 sm:mt-4">
-                      <div className="text-sm sm:text-base">
-                        <span className="font-bold text-orange-600 dark:text-orange-400">
+                  <div className="flex justify-between items-center mt-3">
+                    <div className="h-4 w-16 bg-gray-300 dark:bg-gray-600 rounded" />
+                    <div className="h-8 w-24 bg-orange-400/60 dark:bg-orange-700/60 rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (() => {
+            const unpurchasedTools = premiumTools.filter(tool => !isToolPurchased(tool._id));
+            const allPurchased = unpurchasedTools.length === 0;
+
+            if (allPurchased) {
+              return (
+                <div className="text-center py-16 px-6">
+                  <SparklesIcon className="h-10 w-10 mx-auto text-green-500 mb-4" />
+                  <h3 className="text-2xl font-bold text-green-700 dark:text-green-300 mb-2">
+                    All tools purchased
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-300 max-w-md mx-auto">
+                    You've already unlocked all available premium tools. Feel free to access them anytime from your dashboard. 🎉
+                  </p>
+                  <button
+                    onClick={() => setShowPremiumToolsModal(false)}
+                    className="mt-6 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition"
+                  >
+                    Go to Dashboard
+                  </button>
+                </div>
+              );
+            }
+
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                {unpurchasedTools.map((tool) => (
+                  <div
+                    key={tool._id}
+                    className="relative overflow-hidden rounded-xl border bg-white/50 dark:bg-transparent border-gray-400 dark:border-gray-600 transition-all duration-300 hover:shadow-md hover:border-orange-500"
+                  >
+                    <div className="p-4 sm:p-5">
+                      <div className="flex items-start mb-3">
+                        <div className="p-3 rounded-lg mr-4 bg-orange-100 dark:bg-orange-900/40 text-orange-600">
+                          <SparklesIcon className="md:h-5 h-4 w-4 md:w-5" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold md:text-base text-sm text-gray-800 dark:text-white">
+                            {tool.title}
+                          </h3>
+                          <p className="md:text-sm text-xs text-gray-600 dark:text-gray-300 mt-1">
+                            {tool.description}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center mt-3">
+                        <span className="font-bold text-orange-600 dark:text-orange-400 md:text-base text-sm">
                           ₹{tool.price}
                         </span>
+                        <button
+                          onClick={() => handlePurchaseClick(tool, 'tool')}
+                          disabled={isLoading}
+                          className={`px-4 py-2 rounded-lg font-medium text-white md:text-sm text-xs transition-all ${
+                            isLoading
+                              ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
+                              : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow'
+                          }`}
+                        >
+                          {isLoading ? 'Processing...' : 'Purchase'}
+                        </button>
                       </div>
-                      <button
-                        onClick={() => handlePurchase(tool._id)}
-                        disabled={loading}
-                        className={`px-3 py-1 sm:px-4 sm:py-2 rounded-md sm:rounded-lg font-medium text-white transition-colors text-xs sm:text-sm ${
-                          loading 
-                            ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed' 
-                            : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-md hover:shadow-lg'
-                        }`}
-                      >
-                        {loading ? 'Processing...' : 'Purchase'}
-                      </button>
                     </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          {/* Bundle Offer - Responsive */}
-          {premiumTools.length > 1 && (
-            <div className="mt-6 sm:mt-8 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 p-4 sm:p-6 rounded-lg sm:rounded-xl border border-blue-200 dark:border-blue-700 relative overflow-hidden">
-              <div className="absolute -right-8 -top-8 w-24 h-24 sm:w-32 sm:h-32 bg-blue-200 dark:bg-blue-800 rounded-full opacity-20"></div>
-              <div className="absolute -left-8 -bottom-8 w-32 h-32 sm:w-40 sm:h-40 bg-blue-300 dark:bg-blue-700 rounded-full opacity-10"></div>
-              <div className="relative z-10">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between">
-                  <div className="mb-3 sm:mb-0">
-                    <h3 className="text-lg sm:text-xl font-bold text-blue-800 dark:text-blue-200 mb-1 sm:mb-2">
-                      Premium Bundle
-                    </h3>
-                    <p className="text-xs sm:text-sm text-blue-700 dark:text-blue-300 max-w-lg">
-                      Get all tools at <span className="font-bold">30% discount</span>
-                    </p>
                   </div>
-                   <div className="text-right">
-    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-blue-800 dark:text-blue-200">
-      ₹{discountedPrice}
-    </div>
-    <div className="text-xs sm:text-sm text-blue-600 dark:text-blue-400">
-      <span className="line-through mr-1 sm:mr-2">₹{total}</span>
-      Save ₹{savings}
-    </div>
-  </div>
-                </div>
-                <button
-                  onClick={() => handlePurchase('premium-bundle')}
-                  disabled={loading}
-                  className={`mt-4 w-full py-2 sm:py-3 px-4 sm:px-6 rounded-lg font-bold text-white transition-all text-sm sm:text-base ${
-                    loading 
-                      ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed' 
-                      : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl'
-                  }`}
-                >
-                  {loading ? 'Processing...' : 'Get Complete Package'}
-                </button>
+                ))}
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
       </motion.div>
     </motion.div>
   )}
 </AnimatePresence>
+
+
+
+
 
         {/* Important Links Section */}
         <motion.section
@@ -1741,9 +1868,22 @@ const handleFeedbackSubmit = async (e) => {
 
       {/* Footer */}
       <Footer theme={darkMode ? 'dark' : 'light'} />
+    {/* Add PaymentModal here */}
+    {paymentModalItem && (
+      <PaymentModal
+        item={paymentModalItem}
+        onClose={() => setPaymentModalItem(null)}
+        handlePurchase={handlePurchase}
+        loading={isLoading}
+        type={paymentModalType}
+        paymentStatus={paymentStatus}
+      />
+    )}
     </motion.div>
   );
 };
+
+
 
 const DashboardButton = ({ icon, label, onClick, disabled = false }) => {
   return (
@@ -1759,100 +1899,6 @@ const DashboardButton = ({ icon, label, onClick, disabled = false }) => {
       <span className="text-2xl mb-1">{icon}</span>
       <span className="text-sm font-medium">{label}</span>
     </button>
-  );
-};
-
-{/* Enhanced ToolCard Component */}
-const ToolCard = ({ title, description, icon, onClick, isFree = false, isPremium = false, isLocked = false }) => {
-  return (
-    <motion.div 
-      whileHover={{ y: window.innerWidth > 768 ? -5 : 0 }} // Only animate hover on desktop
-      whileTap={{ scale: 0.98 }} // Add tap feedback on mobile
-      className={`relative overflow-hidden h-full border ${
-        isFree
-          ? 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/10'
-          : isPremium
-            ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/10'
-            : isLocked
-              ? 'border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/10 dark:to-orange-800/10'
-              : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'
-      } rounded-lg md:rounded-xl shadow-sm hover:shadow-md transition-all duration-300`}
-      onClick={onClick}
-    >
-      <div className="p-3 sm:p-4 md:p-5 h-full flex flex-col">
-        {/* Badge - Responsive */}
-        {isFree && (
-          <span className="absolute top-2 right-2 md:top-3 md:right-3 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-[10px] xs:text-xs font-medium px-2 py-0.5 rounded-full">
-            FREE
-          </span>
-        )}
-        {isPremium && (
-          <span className="absolute top-2 right-2 md:top-3 md:right-3 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-[10px] xs:text-xs font-medium px-2 py-0.5 rounded-full">
-            PREMIUM
-          </span>
-        )}
-        
-        <div className="flex items-start mb-2 sm:mb-3 md:mb-4">
-          <div className={`p-2 sm:p-3 rounded-lg mr-3 sm:mr-4 ${
-            isFree
-              ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-              : isPremium
-                ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
-                : isLocked
-                  ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400'
-                  : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
-          }`}>
-            {React.cloneElement(icon, { className: "h-4 w-4 sm:h-5 sm:w-5" })}
-          </div>
-          <div className="flex-1">
-            <h3 className={`text-sm sm:text-base md:text-lg font-bold ${
-              isLocked ? 'text-orange-700 dark:text-orange-300' : 'text-gray-900 dark:text-white'
-            }`}>
-              {title}
-            </h3>
-            <p className={`mt-1 text-xs sm:text-sm ${
-              isLocked ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'
-            }`}>
-              {description}
-            </p>
-          </div>
-        </div>
-        
-        <div className="mt-auto">
-          {isLocked ? (
-            <div className="flex items-center justify-between">
-              <span className="text-xs sm:text-sm font-medium text-orange-600 dark:text-orange-400">
-                <FiLock className="inline mr-1 h-3 w-3 sm:h-4 sm:w-4" /> Premium
-              </span>
-              <button 
-                className="text-xs sm:text-sm bg-orange-600 hover:bg-orange-700 text-white px-2 py-1 sm:px-3 sm:py-1 rounded-md sm:rounded-lg transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent card onClick from firing
-                  onClick();
-                }}
-              >
-                Unlock
-              </button>
-            </div>
-          ) : (
-            <button 
-              className={`w-full py-1 sm:py-2 px-3 sm:px-4 rounded-md sm:rounded-lg font-medium transition-colors flex items-center justify-center text-xs sm:text-sm ${
-                isFree
-                  ? 'bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/50 dark:hover:bg-blue-900 dark:text-blue-300'
-                  : 'bg-green-100 hover:bg-green-200 text-green-700 dark:bg-green-900/50 dark:hover:bg-green-900 dark:text-green-300'
-              }`}
-              onClick={(e) => {
-                e.stopPropagation(); // Prevent card onClick from firing
-                onClick();
-              }}
-            >
-              {isFree ? 'Use Tool' : 'Access Tool'}
-              <FiArrowRight className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
-            </button>
-          )}
-        </div>
-      </div>
-    </motion.div>
   );
 };
 

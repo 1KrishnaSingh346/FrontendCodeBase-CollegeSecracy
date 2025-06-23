@@ -134,9 +134,9 @@ const ContactUs = () => {
                     onClick={handleProfileToggle}
                     className="flex items-center space-x-1 px-3 py-1 md:px-3 md:py-2 rounded-lg transition-all duration-300"
                   >
-                    {user.profilePic ? (
+                    {user.profilePic?.url ? (
                       <img 
-                        src={user.profilePic} 
+                        src={user.profilePic?.url} 
                         alt="Profile" 
                         className="w-8 h-8 rounded-full object-cover border-2 border-orange-400"
                       />
@@ -177,7 +177,7 @@ const ContactUs = () => {
                 </div>
               ) : (
                 <Link 
-                  to="/authForm" 
+                  to="/login" 
                   className={`px-3 py-1 md:px-4 md:py-2 rounded-lg text-sm font-medium border transition-all duration-300 ${darkMode ? 
                     'text-gray-300 border-gray-600 hover:border-orange-400 hover:text-orange-400 hover:bg-gray-700/50' : 
                     'text-gray-700 border-gray-300 hover:border-orange-500 hover:text-orange-500 hover:bg-gray-100/70'}`}
@@ -288,7 +288,7 @@ const ContactUs = () => {
             </>
           ) : (
             <Link
-              to="/authForm"
+              to="/login"
               className={`block px-3 py-3 rounded-lg text-base font-medium border transition-all duration-300 ${darkMode ? 
                 'text-gray-300 border-gray-600 hover:border-orange-400 hover:text-orange-400 hover:bg-gray-700/50' : 
                 'text-gray-700 border-gray-300 hover:border-orange-500 hover:text-orange-500 hover:bg-gray-100/70'}`}
@@ -509,6 +509,7 @@ const ContactUs = () => {
                     <option value="technical">Technical Support</option>
                     <option value="account">Account Help</option>
                     <option value="feedback">Feedback/Suggestions</option>
+                    <option value="policy">Privacy/Terms/Cookie/refund Policy Query</option>
                     <option value="other">Other</option>
                   </select>
                 </div>
@@ -747,6 +748,7 @@ const ContactUs = () => {
                 <li><Link to="/privacy" className={`text-xs md:text-sm hover:underline ${darkMode ? 'text-gray-400 hover:text-orange-400' : 'text-gray-300 hover:text-blue-400'}`}>Privacy Policy</Link></li>
                 <li><Link to="/terms" className={`text-xs md:text-sm hover:underline ${darkMode ? 'text-gray-400 hover:text-orange-400' : 'text-gray-300 hover:text-blue-400'}`}>Terms of Service</Link></li>
                 <li><Link to="/cookies" className={`text-xs md:text-sm hover:underline ${darkMode ? 'text-gray-400 hover:text-orange-400' : 'text-gray-300 hover:text-blue-400'}`}>Cookie Policy</Link></li>
+                <li><Link to="/refund" className={`text-xs md:text-sm hover:underline ${darkMode ? 'text-gray-400 hover:text-orange-400' : 'text-gray-300 hover:text-blue-400'}`}>Refund Policy</Link></li>
               </ul>
             </div>
             <div>

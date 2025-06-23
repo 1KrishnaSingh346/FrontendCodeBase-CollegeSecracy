@@ -1,87 +1,118 @@
 import React from "react";
+import { FileText, ChevronRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const RefundPolicy = () => {
+  const themes = {
+    dark: {
+      background: "bg-gray-900",
+      text: "text-gray-100",
+      secondaryText: "text-gray-400",
+      border: "border-gray-800",
+      card: "bg-gray-800/80 backdrop-blur-sm",
+      hoverText: "hover:text-orange-400",
+      divider: "border-gray-800"
+    },
+    light: {
+      background: "bg-gray-50",
+      text: "text-gray-900",
+      secondaryText: "text-gray-600",
+      border: "border-gray-200",
+      card: "bg-white/80 backdrop-blur-sm",
+      hoverText: "hover:text-blue-600",
+      divider: "border-gray-200"
+    }
+  };
+
+  const savedMode = localStorage.getItem("darkMode");
+  const isDarkMode = savedMode === "true" || (savedMode === null && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const currentTheme = isDarkMode ? themes.dark : themes.light;
+
   return (
-    <div className="bg-gradient-to-b from-blue-50 to-gray-100 min-h-screen flex justify-center items-center p-4 sm:p-6">
-      <div className="bg-gray-200 max-w-[95%] sm:max-w-4xl w-full shadow-lg rounded-lg p-6 sm:p-8 border border-gray-200">
-        {/* Title */}
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-blue-700 mb-4 text-center">
-          💰 Refund Policy
-        </h1>
-        <p className="text-gray-500 text-center mb-6 italic text-sm sm:text-base">
-          Last Updated: February 2025
-        </p>
+    <div className={`min-h-screen ${currentTheme.background} ${currentTheme.text} py-12 px-4 sm:px-6`}>
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center justify-center bg-gradient-to-r from-purple-500 to-blue-500 rounded-full p-3 mb-4">
+            <FileText className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-bold mb-4">Refund Policy</h1>
+          <p className={`${currentTheme.secondaryText} italic`}>
+           This Refund Policy is effective as of 18 June 2025.
+          </p>
+        </div>
 
-        {/* Introduction */}
-        <h2 className="text-xl sm:text-2xl font-semibold mt-6 text-gray-800">1. General Policy</h2>
-        <p className="text-gray-600 text-sm sm:text-base">
-          At <span className="font-semibold text-blue-600">CollegeSecracy</span>, we strive to provide high-quality services. 
-          However, if you are not satisfied, we offer refunds under certain conditions outlined below.
-        </p>
+        {/* Section 1 */}
+        <section className="mb-10">
+          <h2 className="text-2xl font-bold mb-4">1. No Refunds Policy</h2>
+          <p className={currentTheme.secondaryText}>
+            At <span className="font-semibold text-blue-400">CollegeSecracy</span>, we offer digital products and services that are delivered instantly upon purchase. Due to the nature of our offerings, <strong>all sales are final</strong> and we do not provide refunds under any circumstances.
+          </p>
+          <ul className={`list-disc list-inside space-y-2 mt-2 ${currentTheme.secondaryText}`}>
+            <li>Change of mind after purchase</li>
+            <li>Inability to use the tool due to personal or technical issues</li>
+            <li>Accidental or duplicate purchases</li>
+            <li>Misunderstanding of product features (please read descriptions carefully)</li>
+          </ul>
+        </section>
 
-        {/* Refund Eligibility */}
-        <h2 className="text-xl sm:text-2xl font-semibold mt-6 text-gray-800">2. Refund Eligibility</h2>
-        <ul className="list-disc list-inside text-gray-600 space-y-2 text-sm sm:text-base">
-          <li>Refunds are applicable only for purchases made within the last <b>7 days</b>.</li>
-          <li>Services that have been <b>partially used</b> may be eligible for a <b>partial refund</b>.</li>
-          <li>Subscription fees are <b>non-refundable</b> after the trial period.</li>
-          <li>No refunds for violations of our Terms & Conditions.</li>
-        </ul>
+        {/* Section 2 */}
+        <section className="mb-10 border-t pt-6 border-dashed">
+          <h2 className="text-2xl font-bold mb-4">2. Instant Access & Delivery</h2>
+          <p className={currentTheme.secondaryText}>
+            All tools, plans, and digital features are automatically activated and linked to your account immediately after successful payment. Since you receive full value immediately, refunding would result in irreversible usage.
+          </p>
+        </section>
 
-        {/* How to Request a Refund */}
-        <h2 className="text-xl sm:text-2xl font-semibold mt-6 text-gray-800">3. How to Request a Refund</h2>
-        <ul className="list-decimal list-inside text-gray-600 space-y-2 mt-2 text-sm sm:text-base">
-          <li>Send an email to{" "}
-            <a href="mailto:refunds@collegesecracy.com" className="text-blue-500 underline">
-              refunds@collegesecracy.com
-            </a>{" "}with your order details and reason.</li>
-          <li>Our team will review your request within <b>3-5 business days</b>.</li>
-          <li>If approved, the refund will be processed within <b>7-10 business days</b>.</li>
-        </ul>
+        {/* Section 3 */}
+        <section className="mb-10 border-t pt-6 border-dashed">
+          <h2 className="text-2xl font-bold mb-4">3. No Free Trials</h2>
+          <p className={currentTheme.secondaryText}>
+            CollegeSecracy does not offer free trials. Users are encouraged to carefully review plan details, pricing, and usage before making a payment.
+          </p>
+        </section>
 
-        {/* Non-Refundable Services */}
-        <h2 className="text-xl sm:text-2xl font-semibold mt-6 text-gray-800">4. Non-Refundable Services</h2>
-        <ul className="list-disc list-inside text-gray-600 space-y-2 mt-2 text-sm sm:text-base">
-          <li>One-time consultations or personalized coaching services.</li>
-          <li>Completed digital course materials or downloads.</li>
-          <li>Subscription renewals after the trial period.</li>
-        </ul>
+        {/* Section 4 */}
+        <section className="mb-10 border-t pt-6 border-dashed">
+          <h2 className="text-2xl font-bold mb-4">4. Payment Security</h2>
+          <p className={currentTheme.secondaryText}>
+            All transactions are processed securely through <strong>Razorpay</strong>. Your card and payment data is never stored on our servers and is protected by bank-level encryption.
+          </p>
+        </section>
 
-        {/* Late or Missing Refunds */}
-        <h2 className="text-xl sm:text-2xl font-semibold mt-6 text-gray-800">5. Late or Missing Refunds</h2>
-        <ul className="list-disc list-inside text-gray-600 space-y-2 mt-2 text-sm sm:text-base">
-          <li>Check your bank account and confirm with your payment provider.</li>
-          <li>Contact your credit card company; processing times may vary.</li>
-          <li>If the issue persists, email us at{" "}
-            <a href="mailto:support@collegesecracy.com" className="text-blue-500 underline">
-              support@collegesecracy.com
-            </a>.
-          </li>
-        </ul>
+        {/* Section 5 */}
+        <section className="mb-10 border-t pt-6 border-dashed">
+          <h2 className="text-2xl font-bold mb-4">5. Responsibility & Agreement</h2>
+          <p className={currentTheme.secondaryText}>
+            By proceeding with a purchase, you fully acknowledge and agree to this Refund Policy. If you do not agree, please do not continue with the payment.
+          </p>
+        </section>
 
-        {/* Policy Updates */}
-        <h2 className="text-xl sm:text-2xl font-semibold mt-6 text-gray-800">6. Changes to This Policy</h2>
-        <p className="text-gray-600 text-sm sm:text-base">
-          We reserve the right to modify this policy at any time. The latest version will be available on our website.
-        </p>
+        {/* Section 6: Support */}
+        <div className={`${currentTheme.card} rounded-xl p-6 mt-8 border ${currentTheme.border}`}>
+          <h2 className="text-xl font-bold mb-4">6. Need Help?</h2>
+          <p className={`${currentTheme.secondaryText} mb-2`}>
+            If you have any questions before purchasing, feel free to reach out. While we don’t provide refunds, we are here to help you understand the product.
+          </p>
+          <ul className={`${currentTheme.secondaryText} space-y-2 text-sm`}>
+            <li className="flex items-start">
+              <ChevronRight className="w-4 h-4 mt-1 mr-2 text-orange-500" />
+              Email: <a href="mailto:support@collegesecracy.com" className="underline text-blue-400 hover:text-blue-600">
+                support@collegesecracy.com
+              </a>
+            </li>
+            <li className="flex items-start">
+              <ChevronRight className="w-4 h-4 mt-1 mr-2 text-orange-500" />
+              Or use our <Link to="/contact" className={`${currentTheme.hoverText} underline`}>contact form</Link>
+            </li>
+          </ul>
+        </div>
 
-        {/* Contact Us */}
-        <h2 className="text-xl sm:text-2xl font-semibold mt-6 text-gray-800">7. Contact Us</h2>
-        <p className="text-gray-600 text-sm sm:text-base">
-          If you have any questions, reach out at{" "}
-          <a href="mailto:support@collegesecracy.com" className="text-blue-500 underline">
-            support@collegesecracy.com
-          </a>.
-        </p>
-
-        {/* Back Button */}
-        <div className="mt-6 text-center">
-          <a
-            href="/"
-            className="bg-blue-600 text-white px-5 py-3 rounded-md shadow-lg hover:bg-blue-700 transition-all text-sm sm:text-base"
-          >
+        {/* Back Link */}
+        <div className="mt-12 text-center">
+          <Link to="/" className={`inline-flex items-center ${currentTheme.hoverText}`}>
+            <ChevronRight className="w-4 h-4 mr-1 transform rotate-180" />
             Back to Home
-          </a>
+          </Link>
         </div>
       </div>
     </div>

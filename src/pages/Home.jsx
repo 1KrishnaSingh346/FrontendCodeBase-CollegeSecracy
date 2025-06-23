@@ -272,13 +272,13 @@ const Home = ({ isLoggedIn }) => {
               transition={{ duration: 0.8, delay: 0.4 }}
             >
               <Link
-                to="/authForm?type=register"
+                to="/signup"
                 className="bg-orange-600 hover:bg-orange-500 text-white font-bold px-6 py-2 sm:px-8 sm:py-3 text-base sm:text-lg rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
               >
                 Register Now
               </Link>
               <Link
-                to="/authForm?type=login"
+                to="/login"
                 className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-2 sm:px-8 sm:py-3 text-base sm:text-lg rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
               >
                 Login
@@ -500,7 +500,7 @@ const Home = ({ isLoggedIn }) => {
                 ))}
               </ul>
               <Link 
-              to="/authForm?type=register"
+              to="/signup"
                 className={`mt-auto w-full py-3 px-4 rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-xl flex items-center justify-center backdrop-blur-sm ${
                   plan.highlight 
                     ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white' 
@@ -555,7 +555,7 @@ const Home = ({ isLoggedIn }) => {
             ))}
           </ul>
           <Link 
-            to="/authForm?type=register"
+            to="/signup"
             className={`mt-auto w-full py-3 px-4 rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-xl flex items-center justify-center backdrop-blur-sm ${
               plan.highlight 
                 ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white' 
@@ -766,7 +766,7 @@ const Home = ({ isLoggedIn }) => {
             Instantly calculate your exact position among peers based on exam scores and total participants
           </p>
           <Link 
-            to={LoggedIn ? "/tools/rank-calculator" : "/authForm"}
+            to={LoggedIn ? "/tools/rank-calculator" : "/signup"}
             className="mt-auto bg-gradient-to-r from-orange-600 to-blue-600 hover:from-orange-500 hover:to-blue-500 text-white font-medium py-3 px-6 rounded-xl transition-all duration-300 text-center shadow-md hover:shadow-lg transform hover:-translate-y-1 inline-flex items-center justify-center"
           >
             <span>Calculate Rank</span>
@@ -797,7 +797,7 @@ const Home = ({ isLoggedIn }) => {
             Determine your exact percentile ranking to understand how you compare with other test takers
           </p>
           <Link 
-            to={LoggedIn ? "/tools/percentile-calculator" : "/authForm"}
+            to={LoggedIn ? "/tools/percentile-calculator" : "/signup"}
             className="mt-auto bg-gradient-to-r from-blue-600 to-orange-600 hover:from-blue-500 hover:to-orange-500 text-white font-medium py-3 px-6 rounded-xl transition-all duration-300 text-center shadow-md hover:shadow-lg transform hover:-translate-y-1 inline-flex items-center justify-center"
           >
             <span>Find Percentile</span>
@@ -828,7 +828,7 @@ const Home = ({ isLoggedIn }) => {
             Discover which colleges you can get into based on your rank, category, and previous cutoffs
           </p>
           <Link 
-            to={LoggedIn ? "/tools/college-predictor" : "/authForm"}
+            to={LoggedIn ? "/tools/college-predictor" : "/signup"}
             className="mt-auto bg-gradient-to-r from-orange-600 via-blue-600 to-orange-600 hover:from-orange-500 hover:via-blue-500 hover:to-orange-500 text-white font-medium py-3 px-6 rounded-xl transition-all duration-300 text-center shadow-md hover:shadow-lg transform hover:-translate-y-1 inline-flex items-center justify-center"
           >
             <span>Predict Colleges</span>
@@ -880,7 +880,7 @@ const Home = ({ isLoggedIn }) => {
             whileHover={{ y: -5 }}
             className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-md rounded-xl p-6 text-center cursor-pointer hover:shadow-lg transition-all duration-300 border border-white/30 dark:border-gray-700/50"
           >
-            <Link to={LoggedIn ? tool.path : "/authForm"} className="block">
+            <Link to={LoggedIn ? tool.path : "/signup"} className="block">
               <span className="text-4xl block mb-4">{tool.icon}</span>
               <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{tool.name}</h4>
               <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">{tool.description}</p>
@@ -911,13 +911,13 @@ const Home = ({ isLoggedIn }) => {
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link
-              to="/authForm?type=register"
+              to="/signup"
               className="bg-gradient-to-r from-orange-600 to-blue-600 hover:from-orange-500 hover:to-blue-500 text-white font-bold px-8 py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
             >
               Get Started Free
             </Link>
             <Link
-              to="/authForm?type=login"
+              to="/login"
               className="bg-white/90 hover:bg-white text-gray-900 font-bold px-8 py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl border border-gray-200 dark:border-gray-700"
             >
               Already have an account? Login
@@ -980,7 +980,7 @@ const Home = ({ isLoggedIn }) => {
             <p className="text-base sm:text-lg lg:text-xl mb-6 sm:mb-8 max-w-2xl mx-auto text-orange-100">Join thousands of students who have accelerated their careers with CollegeSecracy</p>
             <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
               <Link
-                to="/authForm?type=register"
+                to="/signup"
                 className="bg-white text-orange-700 font-bold px-6 py-2 sm:px-8 sm:py-3 text-base sm:text-lg rounded-md hover:bg-gray-100 transition-all duration-300 hover:scale-105 active:scale-95"
               >
                 Sign Up Free

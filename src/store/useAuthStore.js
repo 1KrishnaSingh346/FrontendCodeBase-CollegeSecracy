@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import api from '../lib/axios';
+import { toast } from 'react-hot-toast';
 
 const useAuthStore = create((set, get) => ({
   user: null,
@@ -15,57 +16,55 @@ const useAuthStore = create((set, get) => ({
     notifications: [],
   loadingNotifications: false,
    pollingInterval: null,
+     payments: [],
+  totalPayments: 0,
+  userLogs: [],
+  adminAuditLogs: [],
 
 initializeAuth: async () => {
   set({ isCheckingAuth: true });
-  try {
-    console.log("Checking Session Begin");
-    const response = await api.get('/api/v1/auth/check-session');
 
-    // Check backend code field explicitly
-    if (response.data?.code && response.data.code >= 400) {
-      // Treat as unauthenticated or error
+  try {
+    const response = await api.get('/api/v1/auth/check-session');
+    const sessionValid = response.data?.code === 200;
+
+    if (!sessionValid) {
+      throw new Error('Session invalid'); // Force error catch block
+    }
+
+    // ✅ Session valid, load user
+    await get().loadUser();
+
+    set({
+      isCheckingAuth: false,
+      initialAuthCheckComplete: true
+    });
+
+  } catch (err) {
+    console.error('Auth initialization error:', err);
+
+    // ❌ Let refresh-token run via interceptor
+    if (err?.response?.status !== 401) {
       set({
         user: null,
         isAuthenticated: false,
         isCheckingAuth: false,
         initialAuthCheckComplete: true
       });
-      return;
     }
-
-    if (response.data?.data?.user) {
-      set({
-        user: response.data.data.user,
-        isAuthenticated: true,
-        isCheckingAuth: false,
-        initialAuthCheckComplete: true
-      });
-    } else {
-      set({ 
-        isCheckingAuth: false, 
-        initialAuthCheckComplete: true,
-        isAuthenticated: false,
-        user: null
-      });
-    }
-  } catch (err) {
-    console.error('Auth initialization error:', err);
-    set({ 
-      user: null,
-      isAuthenticated: false,
-      isCheckingAuth: false,
-      initialAuthCheckComplete: true
-    });
+    // ✅ Don’t force logout on 401 — let refresh-token logic decide that
   }
 },
 
+
+
+
 login: async (credentials) => {
   console.log('[AuthStore] Login initiated');
-  set({ isLoading: true, error: null }); // Clear previous error
-  
+  set({ isLoading: true, error: null });
+
   try {
-    // Client-side validation first
+    // Basic validation
     if (!credentials.email?.trim()) {
       throw new Error('Please provide your email address');
     }
@@ -78,23 +77,24 @@ login: async (credentials) => {
       throw new Error('Please provide a valid email address');
     }
 
-    const response = await api.post('/api/v1/auth/login', {
-      email: credentials.email.trim(),
-      password: credentials.password
-    }, {
-      headers: { 'Content-Type': 'application/json' },
-      withCredentials: true,
-      timeout: 10000
-    });
+    const response = await api.post(
+      '/api/v1/auth/login',
+      {
+        email: credentials.email.trim(),
+        password: credentials.password,
+      },
+      {
+        headers: { 'Content-Type': 'application/json' },
+        withCredentials: true,
+        timeout: 20000,
+      }
+    );
 
+    // Success case
     if (response.data?.status === 'success' && response.data.data?.user) {
       const { user } = response.data.data;
-      set({
-        user,
-        isAuthenticated: true,
-        isLoading: false,
-        error: null
-      });
+      await get().loadUser();
+      set({ error: null, isLoading: false });
       return user;
     }
 
@@ -102,133 +102,239 @@ login: async (credentials) => {
 
   } catch (err) {
     console.error('[AuthStore] Login failed:', err);
-    
+
     let errorMessage = 'Login failed. Please try again.';
-    
+    let errorType = 'generic';
+    let errors = [];
+    let lockTimeLeft = null;
+
     if (err.code === 'ECONNABORTED') {
       errorMessage = 'Request timeout. Please try again.';
+      errorType = 'timeout';
+
     } else if (err.response) {
-      // Use server-provided message if available
-      if (err.response.data?.message) {
-        errorMessage = err.response.data.message;
+      const resData = err.response.data;
+
+      if (resData?.message) errorMessage = resData.message;
+      if (resData?.errors) errors = resData.errors;
+
+      switch (err.response.status) {
+        case 400:
+          errorType = 'validation';
+          break;
+        case 401:
+          errorType = 'invalid_credentials';
+          break;
+        case 403:
+          if (resData.code === 'ACCOUNT_DEACTIVATED') {
+            errorType = 'deactivated_account';
+          } else if (resData.code === 'VERIFY_ACCOUNT') {
+            errorType = 'verify_account';
+          } else if (resData.locked) {
+            errorType = 'account_locked';
+            lockTimeLeft = resData.lockTimeLeft ?? null;
+          } else {
+            errorType = 'unauthorized';
+          }
+          break;
+        case 422:
+          errorType = 'validation';
+          break;
+        default:
+          errorType = 'generic';
       }
+
     } else if (err.message.includes('Network Error')) {
       errorMessage = 'Network error. Please check your connection.';
+      errorType = 'network';
     } else if (err.message) {
-      // Use validation error messages
       errorMessage = err.message;
     }
-    
-    set({
-      isLoading: false,
-      error: errorMessage // Store just the message string
-    });
-    
-    throw new Error(errorMessage);
+
+    const errorToThrow = new Error(errorMessage);
+    errorToThrow.type = errorType;
+    errorToThrow.errors = errors;
+    if (lockTimeLeft !== null) errorToThrow.lockTimeLeft = lockTimeLeft;
+
+    set({ isLoading: false });
+    throw errorToThrow;
   }
 },
 
- signup: async (userData) => {
+
+signup: async (userData) => {
   console.debug('[AuthStore] Signup initiated with data:', userData);
   set({ isLoading: true, error: null });
-  
+
   try {
     const response = await api.post('/api/v1/auth/signup', userData, {
       withCredentials: true,
-      timeout: 10000 // 10 seconds timeout
-    });
-    
-    if (!response.data?.data?.user) {
-      console.warn('[AuthStore] Invalid server response format');
-      throw new Error('Invalid server response format');
-    }
-    
-    set({
-      user: response.data.data.user,
-      isAuthenticated: true,
-      isLoading: false
+      timeout: 20000
     });
 
-    return response.data.data.user;
-    
+    // Backend ab sirf status & message return karta hai:
+    // { status: 'success', message: 'Signup successful! Please verify your email...' }
+    if (response.data?.status === 'success') {
+      set({ isLoading: false });
+      return { success: true, message: response.data.message };
+    }
+
+    // Agar unexpected shape
+    throw new Error(response.data?.message || 'Signup failed');
   } catch (err) {
-    console.error('[AuthStore] Signup error:', {
-      error: err,
-      response: err.response,
-      config: err.config
-    });
-    
+    console.error('[AuthStore] Signup error:', err);
+
     let errorMessage = 'Signup failed. Please try again.';
     let errorType = 'generic';
     let errors = [];
-    
+
     if (err.code === 'ECONNABORTED') {
       errorMessage = 'Request timeout. Please try again.';
       errorType = 'timeout';
     } else if (err.response) {
-      if (err.response.data?.message) {
-        errorMessage = err.response.data.message;
-      }
-      
-      if (err.response.data?.errors) {
-        errors = err.response.data.errors;
-      }
-      
+      const resData = err.response.data;
+      if (resData?.message) errorMessage = resData.message;
+      if (Array.isArray(resData.errors)) errors = resData.errors;
+
       switch (err.response.status) {
         case 400:
+        case 422:
           errorType = 'validation';
           break;
         case 409:
           errorType = 'email_conflict';
           break;
-        case 422:
-          errorType = 'validation';
-          break;
       }
     } else if (err.message.includes('Network Error')) {
       errorMessage = 'Network error. Please check your connection.';
       errorType = 'network';
+    } else if (err.message) {
+      errorMessage = err.message;
     }
-    
+
     const errorToThrow = new Error(errorMessage);
     errorToThrow.type = errorType;
     errorToThrow.errors = errors;
-    
+
+    set({ isLoading: false });
     throw errorToThrow;
   }
 },
 
-  logout: async () => {
-    console.log('[AuthStore] Initiating logout');
+logout: async () => {
+  console.log('[AuthStore] Initiating logout');
 
-    if (!get().isAuthenticated) {
-      console.log('[AuthStore] Not authenticated, skipping logout');
-      return;
-    }
-    
+  try {
+    await api.post('/api/v1/auth/logout', {}, { withCredentials: true });
+
+    set({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      initialAuthCheckComplete: true // ensure clean state
+    });
+
+    console.log('[AuthStore] Logout completed');
+
+    // Optional redirect
+    window.location.href = '/';
+  } catch (err) {
+    console.error('[AuthStore] Logout failed:', err);
+
+    set({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      initialAuthCheckComplete: true
+    });
+
+    // Optional: show toast
+    // toast.error("Logout failed. You have been signed out locally.");
+
+    throw err;
+  }
+},
+
+resetPassword: async (token, email, password) => {
+  try {
+    set({ isLoading: true });
+
+    const res = await api.post(`/api/v1/auth/reset-password?token=${token}`, {
+      email,
+      password,
+    });
+
+    return res.data;
+  } catch (err) {
+    console.error("❌ Password Reset failed:", err?.response?.data || err.message);
+
+    return (
+      err?.response?.data || {
+        success: false,
+        message: "Something went wrong. Please try again.",
+      }
+    );
+  } finally {
+    set({ isLoading: false });
+  }
+},
+
+
+verifyEmail: async (token, email, type) => {
+  try {
+    set({ isLoading: true });
+    const res = await api.post(`/api/v1/auth/verify-email?token=${token}`, {email, type});
+    return res.data;
+  } catch (err) {
+    console.error("Verification failed:", err?.response?.data);
+    return err?.response?.data || { success: false };
+  } finally {
+    set({ isLoading: false });
+  }
+},
+
+sendResetReactivateEmail: async (email, type) => {
+  try {
+    set({ isLoading: true });
+    console.log("Email : ", email);
+
+    const res = await api.post(`/api/v1/auth/send-reset-reactivate-email`, { email, type });
+
+    return res.data;
+  } catch (err) {
+    console.error("Send Reset/Reactivate Email failed", err?.response?.data);
+    return err?.response?.data || { success: false };
+  } finally {
+    set({ isLoading: false });
+  }
+},
+
+
+reSendVerificationEmail: async (email, type) => {
+  try {
+    set({ isLoading: true });
+
+    const res = await api.post(`/api/v1/auth/resend-verification-email`, { email, type });
+
+    return res.data;
+  } catch (err) {
+    console.error("Resend Verification Email failed", err?.response?.data);
+    return err?.response?.data || { success: false };
+  } finally {
+    set({ isLoading: false });
+  }
+},
+
+checkVerificationStatus: async (email, type) => {
     try {
-      await api.post('/api/v1/auth/logout', {}, {
-        withCredentials: true
-      });
-      
-      set({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false
-      });
-      
-      console.log('[AuthStore] Logout completed');
+      const res = await api.post(`/api/v1/auth/check-verification-status`,{email, type});
+      return res?.data;
     } catch (err) {
-      console.error('[AuthStore] Logout failed:', err);
-      // Ensure state is cleared even if error occurs
-      set({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false
-      });
-      throw err;
+      console.error("Check verification error:", err);
+      return false;
     }
   },
+
 
 
   loadUser: async () => {
@@ -239,23 +345,24 @@ login: async (credentials) => {
       const response = await api.get('/api/v1/users/me', {
         withCredentials: true
       });
-      
       if (!response.data?.data?.user) {
         console.warn('[AuthStore] Invalid user data received');
         throw new Error('Invalid user data received');
       }
-
       set({ 
         user: response.data.data.user,
         isAuthenticated: true,
         isLoading: false
       });
 
-      if (response.data.data.user.role === 'mentee') {
-      await get().fetchFeedbackHistory();
-    }
+     if (response.data.data.user.role === 'mentee') {
+  try {
+    await get().fetchFeedbackHistory();
+  } catch (e) {
+    console.warn('[AuthStore] Feedback fetch failed:', e);
+  }
+}
       console.debug('[AuthStore] User session loaded successfully');
-      
       return response.data.data.user;
     } catch (err) {
       console.error('[AuthStore] Load user error:', err);
@@ -267,40 +374,147 @@ login: async (credentials) => {
       throw err;
     }
   },
-  
-  // *********************************** Admin related handling ************************************************
-  updateProfile: async (data) => {
+
+    // 🔐 Delete Account permanently (with password confirmation)
+  deleteAccount: async (password) => {
+    console.log('[AuthStore] Initiating account deletion');
     set({ isLoading: true, error: null });
-    
+
     try {
-      const response = await api.patch('/api/v1/users/updateMe', data, {
-        headers: {
-          'Content-Type': 'application/json'
-        },
+      await api.delete('/api/v1/users/deleteMe', {
+        data: { password }, // DELETE with body
         withCredentials: true
       });
 
-      if (!response.data?.data?.user) {
-        throw new Error('Invalid profile data received');
-      }
-
-      set({ 
-        user: response.data.data.user,
+      // ✅ Clear state on successful deletion
+      set({
+        user: null,
+        isAuthenticated: false,
         isLoading: false
       });
-      
+
+      localStorage.clear(); // or sessionStorage if you use it
+      window.location.href = '/'; // Redirect to home/login
+    } catch (err) {
+      console.error('[AuthStore] Delete failed:', err);
+      const msg = err.response?.data?.message || 'Account deletion failed.';
+      set({ isLoading: false, error: msg });
+      throw new Error(msg);
+    }
+  },
+
+  // 💤 Deactivate Account (soft delete with reason)
+  deactivateAccount: async (reason) => {
+    console.log('[AuthStore] Deactivating account...');
+    set({ isLoading: true, error: null });
+
+    try {
+      await api.patch('/api/v1/users/deactivateAccount', { reason }, {
+        withCredentials: true
+      });
+
+      set({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false
+      });
+
+      get().logout();
+      window.location.href = '/';
+    } catch (err) {
+      console.error('[AuthStore] Deactivation failed:', err);
+      const msg = err.response?.data?.message || 'Account deactivation failed.';
+      set({ isLoading: false, error: msg });
+      throw new Error(msg);
+    }
+  },
+
+
+  // Audit logs 
+
+getMyLogs: async () => {
+    try {
+      const res = await api.get('/api/v1/users/audit/my-logs', {
+      withCredentials: true
+    });
+      set({ userLogs: res.data.data });
+    } catch (err) {
+      console.error('Failed to fetch user logs:', err);
+    }
+  },
+
+  getAllLogs: async () => {
+    try {
+      const res = await api.get('/api/v1/admin/audit/all');
+      set({ adminAuditLogs: res.data.data });
+    } catch (err) {
+      console.error('Failed to fetch all logs:', err);
+    }
+  },
+
+  
+updateProfile: async (data) => {
+    set({ isLoading: true, error: null });
+
+    try {
+      const response = await api.patch('/api/v1/users/updateMe', data);
+      const updatedUser = response.data.data.user;
+
+      set({ user: updatedUser, isLoading: false });
       return response.data;
     } catch (err) {
-      let errorMessage = 'Update failed';
-      if (err.response) {
-        errorMessage = err.response.data?.message || 
-                     err.response.statusText || 
-                     'Update failed';
-      }
+      const errorMessage = err.response?.data?.message || 'Update failed';
       set({ error: errorMessage, isLoading: false });
       throw err;
     }
   },
+
+uploadProfilePic: async (formData) => {
+  set({ isLoading: true, error: null });
+  try {
+    const response = await api.post('/api/v1/users/uploadProfilePic', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    const uploadedPic = response.data.data.profilePic;
+    set((state) => ({
+      user: {
+        ...state.user,
+        profilePic: uploadedPic,
+      },
+      isLoading: false,
+    }));
+    return uploadedPic;
+  } catch (err) {
+    set({ error: "Upload failed", isLoading: false });
+    throw err;
+  }
+},
+
+removeProfilePicAPI: async () => {
+  set({ isLoading: true, error: null });
+  try {
+    await api.delete('/api/v1/users/removeProfilePic');
+    set((state) => ({
+      user: {
+        ...state.user,
+        profilePic: null,
+      },
+      isLoading: false,
+    }));
+  } catch (err) {
+    set({ error: "Remove failed", isLoading: false });
+    throw err;
+  }
+},
+
+getInvoiceDownloadLink: (paymentId) => {
+  return `${api.defaults.baseURL}/api/v1/invoice/${paymentId}`;
+},
+
+
+
+
+  // *********************************** Admin related handling ************************************************
 
   
   clearError: () => {
@@ -565,35 +779,112 @@ AllFeedbackList: async (userId) => {
 
 
 //***************************Payment Related API handling *********************************** */
-  createPaymentOrder: async (planId, couponCode = null) => {
-    set({ isLoading: true });
-    try {
-      const response = await api.post('/api/v1/payments/create-order', {
-        planId,
-        couponCode
-      }, {
-        withCredentials: true
-      });
+createPaymentOrder: async (planId, couponCode = null) => {
+  set({ isLoading: true });
+  try {
+    const response = await api.post('/api/v1/payments/create-order', {
+      planId,
+      couponCode
+    }, {
+      withCredentials: true
+    });
 
-      return response.data;
-    } catch (err) {
-      console.error('Payment order creation failed:', err);
-      throw new Error(err.response?.data?.message || 'Failed to create payment order');
-    } finally {
-      set({ isLoading: false });
+    return { success: true, data: response.data };
+  } catch (err) {
+    console.error('Payment order creation failed:', err);
+    return {
+      success: false,
+      message: err.response?.data?.message || 'Failed to create payment order'
+    };
+  } finally {
+    set({ isLoading: false });
+  }
+},
+
+loadRazorpayScript : async () => {
+  return new Promise((resolve, reject) => {
+    if (window.Razorpay) {
+      resolve(true);
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => reject("Razorpay SDK failed to load");
+      document.body.appendChild(script);
     }
-  },
+  });
+},
+  
+initiateRazorpayPayment: async (orderData, callbacks = {}) => {
+  const { onPaymentSuccess } = callbacks;
 
+  const loaded = await get().loadRazorpayScript();
+  if (!loaded) {
+    alert("Failed to load Razorpay SDK. Please check your connection.");
+    return;
+  }
+
+  return new Promise((resolve, reject) => {
+    const options = {
+      key: import.meta.env.VITE_RAZORPAY_TEST_KEY,
+      amount: orderData.amount,
+      currency: orderData.currency,
+      name: "College Secracy",
+      description: `Purchase: ${orderData.planName}`,
+      order_id: orderData.orderId,
+      prefill: {
+        name: orderData.fullName || undefined,
+        email: orderData.email || undefined,
+        contact: orderData.phone || undefined
+      },
+      theme: { color: "#4548F8" },
+      notes: {
+        userId: orderData.userId || '',
+        planId: orderData.planId || '',
+        purchaseId: orderData.purchaseId || '',
+        couponCode: orderData.couponCode || 'none',
+        validity: orderData.validity || ''
+      },
+      handler: async function (response) {
+         if (typeof onPaymentSuccess === 'function') {
+          onPaymentSuccess();
+        }
+        try {
+          const verification = await get().verifyPayment({
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_signature: response.razorpay_signature,
+            purchaseId: orderData.purchaseId
+          });
+          console.log("Verification result:", verification);
+          resolve(verification);
+        } catch (err) {
+          console.error("Verification error:", err);
+          reject(err);
+        }
+      },
+      modal: {
+        ondismiss: () => {
+          console.log("Payment window closed by user");
+          reject(new Error("Payment window closed"));
+        }
+      }
+    };
+
+    console.log("Opening Razorpay checkout with options:", options);
+    const rzp = new window.Razorpay(options);
+    rzp.open();
+  });
+},
+
+  
   verifyPayment: async (paymentData) => {
     set({ isLoading: true });
     try {
       const response = await api.post('/api/v1/payments/verify', paymentData, {
         withCredentials: true
       });
-
-      // Refresh user data after successful payment
-      await get().loadUser();
-
+      console.log("VerifyPayment kya return kar rha ",response.data);
       return response.data;
     } catch (err) {
       console.error('Payment verification failed:', err);
@@ -603,86 +894,28 @@ AllFeedbackList: async (userId) => {
     }
   },
 
-  initiateRazorpayPayment: async (orderData) => {
-    return new Promise((resolve, reject) => {
-      const options = {
-        key: process.env.RAZORPAY_KEY_ID,
-        amount: orderData.amount,
-        currency: orderData.currency,
-        name: "College Secracy",
-        description: `Purchase: ${orderData.planName}`,
-        order_id: orderData.orderId,
-        handler: async function(response) {
-          try {
-            const verification = await get().verifyPayment({
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_signature: response.razorpay_signature,
-              purchaseId: orderData.purchaseId
-            });
-            resolve(verification);
-          } catch (err) {
-            reject(err);
-          }
-        },
-        prefill: {
-          name: get().user?.fullName || '',
-          email: get().user?.email || '',
-          contact: get().user?.phone || ''
-        },
-        theme: {
-          color: "#F37254"
-        },
-        modal: {
-          ondismiss: function() {
-            reject(new Error('Payment window closed'));
-          }
-        }
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.open();
-    });
-  },
-
-  // Admin payment methods
-  getAllTransactions: async () => {
-    if (get().user?.role !== 'admin') {
-      throw new Error('Unauthorized access');
-    }
-
+ getAllPayments: async () => {
     set({ isLoading: true });
     try {
       const response = await api.get('/api/v1/admin/payments', {
-        withCredentials: true
+        withCredentials: true,
       });
-      return response.data;
+
+      const payments = response.data?.data || [];
+      const total = response.data?.totalPayments || payments.length;
+
+      set({ payments, totalPayments: total });
+      console.log('Payment Data:', payments);
+      return payments;
     } catch (err) {
-      console.error('Failed to fetch transactions:', err);
-      throw new Error(err.response?.data?.message || 'Failed to fetch transactions');
+      console.error('Failed to fetch payment details', err);
+      set({ error: 'Failed to fetch payments' });
+      return [];
     } finally {
       set({ isLoading: false });
     }
   },
 
-  getTransactionDetails: async (paymentId) => {
-    if (get().user?.role !== 'admin') {
-      throw new Error('Unauthorized access');
-    }
-
-    set({ isLoading: true });
-    try {
-      const response = await api.get(`/api/v1/admin/payments/${paymentId}`, {
-        withCredentials: true
-      });
-      return response.data;
-    } catch (err) {
-      console.error('Failed to fetch transaction details:', err);
-      throw new Error(err.response?.data?.message || 'Failed to fetch transaction details');
-    } finally {
-      set({ isLoading: false });
-    }
-  },
 
   fetchNotifications: async () => {
     set({ loadingNotifications: true });

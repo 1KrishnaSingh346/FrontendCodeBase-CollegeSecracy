@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { Info, Cookie, Shield, ChevronRight } from "lucide-react";
 
 const CookiePolicy = ({ theme = "dark" }) => {
-  // Theme configurations
   const themes = {
     dark: {
       background: "bg-gray-900",
@@ -12,7 +11,6 @@ const CookiePolicy = ({ theme = "dark" }) => {
       border: "border-gray-800",
       card: "bg-gray-800/80 backdrop-blur-sm",
       hoverText: "hover:text-orange-400",
-      divider: "border-gray-800"
     },
     light: {
       background: "bg-gray-50",
@@ -21,162 +19,133 @@ const CookiePolicy = ({ theme = "dark" }) => {
       border: "border-gray-200",
       card: "bg-white/80 backdrop-blur-sm",
       hoverText: "hover:text-blue-600",
-      divider: "border-gray-200"
     }
   };
-  const savedMode = localStorage.getItem('darkMode');
-  const isDarkMode = savedMode === 'true' || (savedMode === null && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+  const savedMode = localStorage.getItem("darkMode");
+  const isDarkMode = savedMode === "true" || (savedMode === null && window.matchMedia("(prefers-color-scheme: dark)").matches);
   const currentTheme = isDarkMode ? themes.dark : themes.light;
 
   return (
-    <div className={`min-h-screen ${currentTheme.background} ${currentTheme.text} py-12 px-4 sm:px-6`}>
-      <div className="max-w-4xl mx-auto">
+    <main className={`min-h-screen ${currentTheme.background} ${currentTheme.text} py-12 px-4 sm:px-6 lg:px-8`}>
+      <section className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-12">
+        <header className="text-center mb-12">
           <div className="inline-flex items-center justify-center bg-gradient-to-r from-orange-500 to-blue-500 rounded-full p-3 mb-4">
             <Cookie className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold mb-4">Cookie Policy</h1>
-          <p className={`${currentTheme.secondaryText} max-w-2xl mx-auto`}>
-            Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-          </p>
-        </div>
+          <h1 className="text-3xl sm:text-4xl font-bold mb-2">Cookie Policy</h1>
+          <p className={`${currentTheme.secondaryText}`}>This Cookie Policy is effective as of 18 June 2025.
+</p>
+        </header>
 
-        {/* Introduction */}
-        <div className={`${currentTheme.card} rounded-xl p-6 mb-8 border ${currentTheme.border}`}>
+        {/* Intro */}
+        <article className={`${currentTheme.card} rounded-xl p-6 mb-8 border ${currentTheme.border}`}>
           <div className="flex items-start">
-            <Info className="w-5 h-5 mt-0.5 mr-3 flex-shrink-0 text-orange-500" />
-            <div>
-              <p className={`${currentTheme.text}`}>
-                This Cookie Policy explains how CollegeSecracy ("we", "us", or "our") uses cookies and similar tracking technologies when you visit our website. By using our site, you consent to our use of cookies in accordance with this policy.
-              </p>
-            </div>
+            <Info className="w-5 h-5 mt-0.5 mr-3 text-orange-500" />
+            <p>
+              This Cookie Policy explains how <span className="font-semibold text-blue-400">CollegeSecracy</span> ("we", "us", or "our") uses cookies and similar technologies when you visit our website. By using our site, you consent to the use of cookies as described here.
+            </p>
           </div>
-        </div>
+        </article>
 
         {/* What Are Cookies */}
-        <div className="mb-10">
+        <section className="mb-10">
           <h2 className="text-2xl font-bold mb-4 flex items-center">
-            <Cookie className="w-6 h-6 mr-2 text-orange-500" />
-            What Are Cookies?
+            <Cookie className="w-6 h-6 mr-2 text-orange-500" /> What Are Cookies?
           </h2>
           <p className={`${currentTheme.secondaryText} mb-4`}>
-            Cookies are small text files that are placed on your computer or mobile device when you visit a website. They are widely used to make websites work more efficiently, as well as to provide information to the site owners.
+            Cookies are small data files placed on your device. They help websites function efficiently and provide insights for optimization.
           </p>
           <p className={`${currentTheme.secondaryText}`}>
-            Cookies do not typically contain any information that personally identifies a user, but personal information that we store about you may be linked to the information stored in and obtained from cookies.
+            They usually don’t contain personal information, but can be linked with data we store.
           </p>
-        </div>
+        </section>
 
-        {/* Types of Cookies We Use */}
-        <div className="mb-10">
+        {/* Cookie Types */}
+        <section className="mb-10">
           <h2 className="text-2xl font-bold mb-4 flex items-center">
-            <Shield className="w-6 h-6 mr-2 text-blue-500" />
-            Types of Cookies We Use
+            <Shield className="w-6 h-6 mr-2 text-blue-500" /> Types of Cookies We Use
           </h2>
-          
-          <div className="grid gap-4 mb-6">
-            {/* Essential Cookies */}
-            <div className={`${currentTheme.card} rounded-lg p-5 border ${currentTheme.border}`}>
-              <h3 className="font-bold text-lg mb-2">Essential Cookies</h3>
-              <p className={`${currentTheme.secondaryText} mb-3`}>
-                These cookies are necessary for the website to function and cannot be switched off. They are usually only set in response to actions made by you.
-              </p>
-              <div className={`${currentTheme.secondaryText} text-sm bg-gray-800/50 dark:bg-gray-700/30 rounded px-3 py-2 inline-block`}>
-                Example: Authentication cookies
-              </div>
-            </div>
 
-            {/* Analytics Cookies */}
-            <div className={`${currentTheme.card} rounded-lg p-5 border ${currentTheme.border}`}>
-              <h3 className="font-bold text-lg mb-2">Analytics Cookies</h3>
-              <p className={`${currentTheme.secondaryText} mb-3`}>
-                These cookies allow us to count visits and traffic sources so we can measure and improve the performance of our site.
-              </p>
-              <div className={`${currentTheme.secondaryText} text-sm bg-gray-800/50 dark:bg-gray-700/30 rounded px-3 py-2 inline-block`}>
-                Example: Google Analytics cookies
+          <div className="grid gap-5">
+            {[
+              {
+                title: "Essential Cookies",
+                desc: "Required for core functionality. These can't be disabled.",
+                example: "Authentication cookies"
+              },
+              {
+                title: "Analytics Cookies",
+                desc: "Used to analyze traffic and performance.",
+                example: "Google Analytics cookies"
+              },
+              {
+                title: "Preference Cookies",
+                desc: "Enable personalization and remember choices.",
+                example: "Theme preference cookies"
+              },
+            ].map((cookie, i) => (
+              <div key={i} className={`${currentTheme.card} rounded-lg p-5 border ${currentTheme.border}`}>
+                <h3 className="font-bold text-lg mb-2">{cookie.title}</h3>
+                <p className={`${currentTheme.secondaryText} mb-2`}>{cookie.desc}</p>
+                <div className="text-sm px-3 py-1 rounded bg-gray-700/40 dark:bg-gray-600/30 inline-block">
+                  Example: {cookie.example}
+                </div>
               </div>
-            </div>
-
-            {/* Preference Cookies */}
-            <div className={`${currentTheme.card} rounded-lg p-5 border ${currentTheme.border}`}>
-              <h3 className="font-bold text-lg mb-2">Preference Cookies</h3>
-              <p className={`${currentTheme.secondaryText} mb-3`}>
-                These cookies enable the website to provide enhanced functionality and personalization based on your choices.
-              </p>
-              <div className={`${currentTheme.secondaryText} text-sm bg-gray-800/50 dark:bg-gray-700/30 rounded px-3 py-2 inline-block`}>
-                Example: Theme preference cookies
-              </div>
-            </div>
+            ))}
           </div>
-        </div>
+        </section>
 
-        {/* Cookie Management */}
-        <div className="mb-10">
+        {/* Managing Cookies */}
+        <section className="mb-10">
           <h2 className="text-2xl font-bold mb-4">Managing Cookies</h2>
-          <p className={`${currentTheme.secondaryText} mb-4`}>
-            Most web browsers allow some control of most cookies through the browser settings. You can:
+          <p className={`${currentTheme.secondaryText} mb-3`}>
+            You can manage cookies via your browser settings:
           </p>
-          <ul className={`${currentTheme.secondaryText} space-y-2 mb-6`}>
-            <li className="flex items-start">
-              <ChevronRight className="w-4 h-4 mt-1 mr-2 flex-shrink-0 text-orange-500" />
-              <span>Review your browser's cookie settings and adjust them to your preference</span>
-            </li>
-            <li className="flex items-start">
-              <ChevronRight className="w-4 h-4 mt-1 mr-2 flex-shrink-0 text-orange-500" />
-              <span>Delete existing cookies from your device</span>
-            </li>
-            <li className="flex items-start">
-              <ChevronRight className="w-4 h-4 mt-1 mr-2 flex-shrink-0 text-orange-500" />
-              <span>Set your browser to refuse all or some cookies</span>
-            </li>
+          <ul className="list-disc pl-6 space-y-2 text-sm text-gray-400">
+            <li>Adjust settings to block or allow cookies.</li>
+            <li>Delete stored cookies anytime.</li>
+            <li>Disable cookies to limit tracking (may affect functionality).</li>
           </ul>
-          <p className={`${currentTheme.secondaryText}`}>
-            Please note that if you disable cookies, some features of our website may not function properly.
-          </p>
-        </div>
+        </section>
 
-        {/* Changes to This Policy */}
-        <div className="mb-10">
-          <h2 className="text-2xl font-bold mb-4">Changes to This Policy</h2>
-          <p className={`${currentTheme.secondaryText} mb-4`}>
-            We may update this Cookie Policy from time to time. We will notify you of any changes by posting the new policy on this page.
-          </p>
+        {/* Third Party Disclaimer */}
+        <section className="mb-10">
+          <h2 className="text-2xl font-bold mb-4">Third-Party Links</h2>
           <p className={`${currentTheme.secondaryText}`}>
-            You are advised to review this Cookie Policy periodically for any changes.
+            Our website may link to third-party services. We don’t control their practices and suggest reviewing their own cookie and privacy policies.
           </p>
-        </div>
+        </section>
 
-        {/* Contact Information */}
-        <div className={`${currentTheme.card} rounded-xl p-6 border ${currentTheme.border}`}>
+        {/* Contact Info */}
+        <section className={`${currentTheme.card} rounded-xl p-6 border ${currentTheme.border}`}>
           <h2 className="text-2xl font-bold mb-4">Contact Us</h2>
           <p className={`${currentTheme.secondaryText} mb-4`}>
-            If you have any questions about this Cookie Policy, please contact us:
+            For questions about this Cookie Policy:
           </p>
-          <ul className={`${currentTheme.secondaryText} space-y-2`}>
+          <ul className={`${currentTheme.secondaryText} space-y-2 text-sm`}>
             <li className="flex items-start">
-              <ChevronRight className="w-4 h-4 mt-1 mr-2 flex-shrink-0 text-orange-500" />
-              <span>By email: privacy@collegesecracy.com</span>
+              <ChevronRight className="w-4 h-4 mt-1 mr-2 text-orange-500" />
+              Email: <a href="mailto:supportcollegesecracy@gmail.com" className="underline text-blue-400 hover:text-blue-600">
+      supportcollegesecracy@gmail.com
+    </a>
             </li>
             <li className="flex items-start">
-              <ChevronRight className="w-4 h-4 mt-1 mr-2 flex-shrink-0 text-orange-500" />
-              <span>Through our <Link to="/contact" className={`${currentTheme.hoverText} underline`}>contact form</Link></span>
+              <ChevronRight className="w-4 h-4 mt-1 mr-2 text-orange-500" />
+              Via our <Link to="/contact" className={`${currentTheme.hoverText} underline`}>contact form</Link>
             </li>
           </ul>
-        </div>
+        </section>
 
-        {/* Back Link */}
-        <div className="mt-12 text-center">
-          <Link 
-            to="/" 
-            className={`inline-flex items-center ${currentTheme.hoverText} transition-colors`}
-          >
-            <ChevronRight className="w-4 h-4 mr-1 transform rotate-180" />
-            Back to Home
+        {/* Back Home */}
+        <footer className="mt-12 text-center">
+          <Link to="/" className={`inline-flex items-center ${currentTheme.hoverText}`}>
+            <ChevronRight className="w-4 h-4 mr-1 rotate-180" /> Back to Home
           </Link>
-        </div>
-      </div>
-    </div>
+        </footer>
+      </section>
+    </main>
   );
 };
 

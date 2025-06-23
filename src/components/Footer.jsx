@@ -204,6 +204,11 @@ const Footer = ({ theme = "dark" }) => {
                       Cookie Policy
                     </Link>
                   </li>
+                                    <li>
+                    <Link to="/refund" className={`${currentTheme.secondaryText} ${currentTheme.hoverText} transition-colors`}>
+                      Refund Policy
+                    </Link>
+                  </li>
                 </ul>
               </div>
             </div>

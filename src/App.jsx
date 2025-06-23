@@ -1,58 +1,51 @@
+// App.jsx
 import React, { Suspense, useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import useAuthStore from "./store/useAuthStore.js";
 import { InitialLoader, FullScreenLoader } from "./components/Loaders/script.js";
 import { ErrorBoundary as ErrorBoundaryReact } from "react-error-boundary";
+import { Toaster, toast } from 'react-hot-toast';
 
-// Lazy-loaded components with proper chunk names
-const AuthForm = React.lazy(() => import(/* webpackChunkName: "auth" */ "./pages/AuthForm"));
-const Home = React.lazy(() => import(/* webpackChunkName: "home" */ "./pages/Home"));
-const Search = React.lazy(() => import(/* webpackChunkName: "search" */ "./pages/Search"));
-const Payment = React.lazy(() => import(/* webpackChunkName: "payment" */ "./pages/Payment"));
-const Profile = React.lazy(() => import(/* webpackChunkName: "profile" */ "./pages/Profile"));
-const AdminDashboard = React.lazy(() => import(/* webpackChunkName: "admin" */ "./pages/AdminPages/AdminDashboard.jsx"));
-const MenteePage = React.lazy(() => import(/* webpackChunkName: "mentee" */ "./pages/MenteePage"));
-const MentorPage = React.lazy(() => import(/* webpackChunkName: "mentor" */ "./pages/MentorPage"));
-const AboutUs = React.lazy(() => import(/* webpackChunkName: "about" */ "./pages/AboutUs"));
-const ContactUs = React.lazy(() => import(/* webpackChunkName: "contact" */ "./pages/ContactUs"));
-const TermsAndConditions = React.lazy(() => import(/* webpackChunkName: "legal" */ "./pages/Policies/TermsAndConditions.jsx"));
-const PrivacyPolicy = React.lazy(() => import(/* webpackChunkName: "legal" */ "./pages/Policies/PrivacyPolicy.jsx"));
-const CookiePolicy = React.lazy(() => import(/* webpackChunkName: "legal" */ "./pages/Policies/CookiePolicy.jsx"));
-const CollegeDataTable = React.lazy(() => import(/* webpackChunkName: "data" */ "./pages/CollegeDataTable"));
-const ToolsPage = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/ToolPage"));
-const RankCalculator = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/tools/RankCalculator"));
-const PercentileCalculator = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/tools/PercentileCalculator"));
-const CollegePredictor = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/tools/CollegePredictor"));
-const StateCollegePredictor = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/tools/StateCollegePredictor"));
-const CGPACalculator = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/tools/CGPACalculator"));
-const MarkingScheme = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/tools/MarkingScheme"));
-const CutoffAnalyzer = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/tools/CutoffAnalyzer"));
-const ExamTools = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/tools/ExamTools"));
-const StudyPlanner = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/tools/StudyPlanner.jsx"));
-import CollegePredictorService from "./pages/tools/CollegePredictorService.jsx";
-const ResourcesPage = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/StudentPages/ResourcesPage.jsx"));
-const MockTestPage = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/StudentPages/MockTestPage.jsx"));
-const ProgressPage = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/StudentPages/ProgressPage.jsx"));
-const ResourcesComingSoon = React.lazy(() => import(/* webpackChunkName: "coming-soon" */ "./pages/StudentPages/ComingSoon/ResourcesComingSoon.jsx"));
-const MockTestsComingSoon = React.lazy(() => import(/* webpackChunkName: "coming-soon" */ "./pages/StudentPages/ComingSoon/MockTestsComingSoon.jsx"));
-const ProgressComingSoon = React.lazy(() => import(/* webpackChunkName: "coming-soon" */ "./pages/StudentPages/ComingSoon/ProgressComingSoon.jsx"));
-const BranchComparison = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/tools/BranchComparison.jsx"));
-const MentalHealthComponent = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/StudentPages/Components/MentalHealthComponent.jsx"));
-const AdminHome = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/AdminPages/AdminHome.jsx"));
-const AdminUsers = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/AdminPages/AdminUsers.jsx"));
-const AdminSettings = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/AdminPages/AdminSettings.jsx"));
-const AdminCollegeData = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/AdminPages/AdminCollegeData.jsx"));
-import LandingRedirect from './components/LandingRedirect.jsx';
-const AdminPaymentManagement = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/AdminPages/AdminPaymentManagement.jsx"));
-const AdminEventManagement = React.lazy(() => import("./pages/AdminPages/adminEventManagement.jsx"));
-const AdmonPaymentAnalytics = React.lazy(() => import(/* webpackChunkName: "tools" */ "./pages/AdminPages/AdminPaymentAnalytics.jsx"));
+// Lazy Imports
+import {LoginPage, SignupPage } from "./pages/AuthForm.jsx";
 
+// const AuthForm = React.lazy(() => import("./pages/AuthForm"));
+const Home = React.lazy(() => import("./pages/Home"));
+const Search = React.lazy(() => import("./pages/Search"));
+const Payment = React.lazy(() => import("./pages/Payment"));
+const Profile = React.lazy(() => import("./pages/Profile"));
+const AdminDashboard = React.lazy(() => import("./pages/AdminPages/AdminDashboard.jsx"));
+const MenteePage = React.lazy(() => import("./pages/MenteePage"));
+const MentorPage = React.lazy(() => import("./pages/MentorPage"));
+const AboutUs = React.lazy(() => import("./pages/AboutUs"));
+const ContactUs = React.lazy(() => import("./pages/ContactUs"));
+const TermsAndConditions = React.lazy(() => import("./pages/Policies/TermsAndConditions.jsx"));
+const PrivacyPolicy = React.lazy(() => import("./pages/Policies/PrivacyPolicy.jsx"));
+const CookiePolicy = React.lazy(() => import("./pages/Policies/CookiePolicy.jsx"));
+const RefundPolicy = React.lazy(() => import("./pages/Policies/RefundPolicy.jsx"));
+const CollegeDataTable = React.lazy(() => import("./pages/CollegeDataTable"));
+const ToolsPage = React.lazy(() => import("./pages/ToolPage"));
+const RankCalculator = React.lazy(() => import("./pages/tools/RankCalculator"));
+const PercentileCalculator = React.lazy(() => import("./pages/tools/PercentileCalculator"));
+const CollegePredictor = React.lazy(() => import("./pages/tools/CollegePredictor"));
+const StateCollegePredictor = React.lazy(() => import("./pages/tools/StateCollegePredictor"));
+const CGPACalculator = React.lazy(() => import("./pages/tools/CGPACalculator"));
+const StudyPlanner = React.lazy(() => import("./pages/tools/StudyPlanner.jsx"));
+const ResourcesComingSoon = React.lazy(() => import("./pages/StudentPages/ComingSoon/ResourcesComingSoon.jsx"));
+const MockTestsComingSoon = React.lazy(() => import("./pages/StudentPages/ComingSoon/MockTestsComingSoon.jsx"));
+const ProgressComingSoon = React.lazy(() => import("./pages/StudentPages/ComingSoon/ProgressComingSoon.jsx"));
+const BranchComparison = React.lazy(() => import("./pages/tools/BranchComparison.jsx"));
+const MentalHealthComponent = React.lazy(() => import("./pages/StudentPages/Components/MentalHealthComponent.jsx"));
+const AdminHome = React.lazy(() => import("./pages/AdminPages/AdminHome.jsx"));
+const AdminUsers = React.lazy(() => import("./pages/AdminPages/AdminUsers.jsx"));
+const AdminSettings = React.lazy(() => import("./pages/AdminPages/AdminSettings.jsx"));
+const AdminCollegeData = React.lazy(() => import("./pages/AdminPages/AdminCollegeData.jsx"));
+const AdminPlanAndEventManagement = React.lazy(() => import("./pages/AdminPages/adminPlanAndEventManagement.jsx"));
+const AdminPaymentAnalytics = React.lazy(() => import("./pages/AdminPages/AdminPaymentAnalytics.jsx"));
+const VerifyEmail = React.lazy(() => import("./pages/VerifyEmail.jsx"));
+const ResetPassword = React.lazy(() => import("./pages/ResetPassword.jsx"));
 import DashboardLayout from "./pages/Layouts/DashboardLayout.jsx";
-import AdminPaymentAnalytics from "./pages/AdminPages/AdminPaymentAnalytics.jsx";
 
-
-
-// Enhanced Error Boundary Component
 const ErrorBoundary = ({ children }) => {
   const [errorInfo, setErrorInfo] = useState(null);
 
@@ -62,88 +55,56 @@ const ErrorBoundary = ({ children }) => {
   };
 
   return errorInfo ? (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <h2 className="text-xl font-bold text-red-600 dark:text-red-400 mb-4">
-          Something went wrong
-        </h2>
+    <div className="flex items-center justify-center min-h-screen p-4">
+      <div className="max-w-md bg-white dark:bg-gray-800 p-6 rounded shadow">
+        <h2 className="text-xl font-bold text-red-600 mb-4">Something went wrong</h2>
         <details className="mb-4">
-          <summary className="cursor-pointer text-sm text-gray-600 dark:text-gray-300">
-            Error details
-          </summary>
-          <pre className="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs overflow-auto">
-            {errorInfo.componentStack}
-          </pre>
+          <summary className="cursor-pointer">Details</summary>
+          <pre className="mt-2 text-sm">{errorInfo?.componentStack}</pre>
         </details>
-        <button
-          onClick={handleReset}
-          className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-        >
-          Try Again
-        </button>
+        <button onClick={handleReset} className="px-4 py-2 bg-blue-600 text-white rounded">Try Again</button>
       </div>
     </div>
   ) : (
-    <ErrorBoundaryReact 
-      onError={(error, info) => {
-        console.error("ErrorBoundary caught an error:", error, info);
-        setErrorInfo(info);
-      }}
-      FallbackComponent={() => null}
-    >
+    <ErrorBoundaryReact onError={(err, info) => setErrorInfo(info)} FallbackComponent={() => null}>
       {children}
     </ErrorBoundaryReact>
   );
 };
 
+// Public Route (no auth check)
 const PublicRoute = ({ children }) => {
-  const { user } = useAuthStore();
+  const { user, initialAuthCheckComplete } = useAuthStore();
   const location = useLocation();
+
+  if (!initialAuthCheckComplete) {
+    return <InitialLoader fullScreen />; // Wait till auth check completes
+  }
+
   if (user) {
-    switch (user.role) {
-      case 'admin':
-        return <Navigate to="/admin" state={{ from: location }} replace />;
-      case 'mentee':
-        return <Navigate to="/mentee-dashboard" state={{ from: location }} replace />;
-      case 'mentor':
-        return <Navigate to="/mentor-dashboard" state={{ from: location }} replace />;
-      default:
-        return <Navigate to="/" replace />;
-    }
+    const redirectMap = {
+      admin: "/admin",
+      mentor: "/mentor-dashboard",
+      mentee: "/mentee-dashboard",
+    };
+    return <Navigate to={redirectMap[user.role] || "/"} replace state={{ from: location }} />;
   }
 
   return children;
 };
 
+// Protected Route (with auth + role)
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
-  const { 
-    user, 
-    isCheckingAuth, 
-    initialAuthCheckComplete 
-  } = useAuthStore();
+  const { user, initialAuthCheckComplete, isCheckingAuth } = useAuthStore();
   const location = useLocation();
 
-  if ((isCheckingAuth && !initialAuthCheckComplete) || !initialAuthCheckComplete) {
-    return <InitialLoader fullScreen />;
-  }
+if ((isCheckingAuth && !initialAuthCheckComplete) || !initialAuthCheckComplete) {
+  return <InitialLoader fullScreen />;
+}
 
-  if (!user) {
-    return <Navigate to="/" state={{ from: location }} replace />;
-  }
+  if (!user) return <Navigate to="/" replace state={{ from: location }} />;
 
-  // More robust role comparison
-  const normalizedUserRole = String(user.role).toLowerCase().trim();
-  const normalizedAllowedRoles = allowedRoles.map(r => String(r).toLowerCase().trim());
-  
-  const hasRequiredRole = allowedRoles.length === 0 || 
-    normalizedAllowedRoles.includes(normalizedUserRole);
-
-  if (!hasRequiredRole) {
-    console.warn(
-      `Access denied. User role: ${user.role}, ` +
-      `Required roles: ${allowedRoles.join(', ')}, ` +
-      `Normalized comparison: ${normalizedUserRole} vs [${normalizedAllowedRoles.join(', ')}]`
-    );
+  if (allowedRoles.length && !allowedRoles.includes(user.role)) {
     return <Navigate to="/unauthorized" replace />;
   }
 
@@ -151,45 +112,58 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
 };
 
 function AppContent() {
-  const { 
-    user, 
-    error: authError,
-    initialAuthCheckComplete,
-    initializeAuth
-  } = useAuthStore();
-  
+  const { user, initializeAuth, initialAuthCheckComplete, authError } = useAuthStore();
   const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
   const location = useLocation();
 
+  // useEffect(() => {
+  //   // Run initializeAuth only if cookie exists
+  //   if (!initialAuthCheckComplete && document.cookie.includes("jwt")) {
+  //     initializeAuth();
+  //   }
+  // }, [initialAuthCheckComplete]);
+
   useEffect(() => {
-    initializeAuth();
-  }, [initializeAuth]);
+  initializeAuth();
+}, []);
 
-  if (!initialAuthCheckComplete) {
-    return <InitialLoader fullScreen />;
+
+useEffect(() => {
+  const message = sessionStorage.getItem('logoutMessage');
+  if (message) {
+    toast.success(message, {
+      duration: 3000,
+      style: { background: '#4BB543', color: '#fff' }
+    });
+    sessionStorage.removeItem('logoutMessage'); // Clear it after showing
   }
+}, []);
 
+
+//   useEffect(() => {
+//   const publicPaths = ['/', '/login','/signup', '/verify-email',"/reset-password", '/about', '/contact', '/terms', '/privacy', '/cookies', '/refund'];
+//   const isPublicRoute = publicPaths.includes(location.pathname);
+
+//   if (!initialAuthCheckComplete && !isPublicRoute) {
+//     initializeAuth();
+//   } else {
+//     useAuthStore.setState({ initialAuthCheckComplete: true }); // Skip auth check for public pages
+//   }
+// }, [initialAuthCheckComplete, location.pathname, initializeAuth]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-      {/* Global loading indicator for payments */}
-      {isPaymentProcessing && <FullScreenLoader message="Processing payment..." />}
-      
-      {/* Global error notification */}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {isPaymentProcessing && <FullScreenLoader message="Processing Payment..." />}
+
       {authError && (
         <div className="fixed top-4 right-4 z-50">
-          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-lg max-w-xs">
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow">
             <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <p className="font-medium">Authentication Error</p>
+              <div>
+                <p className="font-bold">Auth Error</p>
                 <p className="text-sm">{authError}</p>
               </div>
-              <button 
-                onClick={() => useAuthStore.getState().clearError()}
-                className="ml-2 text-red-500 hover:text-red-700"
-              >
-                &times;
-              </button>
+              <button onClick={() => useAuthStore.getState().clearError()} className="ml-2">&times;</button>
             </div>
           </div>
         </div>
@@ -197,282 +171,82 @@ function AppContent() {
 
       <Suspense fallback={<InitialLoader fullScreen />}>
         <Routes location={location} key={location.key}>
-          {/* Public Routes */}
-          <Route path="/" element={
-            <ErrorBoundary>
-              <PublicRoute>
-                <Home />
-              </PublicRoute>
-            </ErrorBoundary>
-          } />
-          
-          <Route path="/search" element={
-            <ErrorBoundary>
-              <Search />
-            </ErrorBoundary>
-          } />
-          
-          <Route path="/payment" element={
-            <ErrorBoundary>
-              <Payment setIsPaymentProcessing={setIsPaymentProcessing} />
-            </ErrorBoundary>
-          } />
-          
-          <Route path="/about" element={
-            <ErrorBoundary>
-              <AboutUs />
-            </ErrorBoundary>
-          } />
-          
-          <Route path="/contact" element={
-            <ErrorBoundary>
-              <ContactUs />
-            </ErrorBoundary>
-          } />
-          
-          <Route path="/terms" element={
-            <ErrorBoundary>
-              <TermsAndConditions />
-            </ErrorBoundary>
-          } />
-          
-          <Route path="/privacy" element={
-            <ErrorBoundary>
-              <PrivacyPolicy />
-            </ErrorBoundary>
-          } />
+          {/* --- PUBLIC ROUTES --- */}
+          <Route path="/" element={<PublicRoute><Home /></PublicRoute>} />
+          <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+          <Route path="/signup" element={<PublicRoute><SignupPage /></PublicRoute>} />
+          <Route path="/about" element={<AboutUs />} />
+          <Route path="/contact" element={<ContactUs />} />
+          <Route path="/terms" element={<TermsAndConditions />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/cookies" element={<CookiePolicy />} />
+          <Route path="/refund" element={<RefundPolicy />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/tools" element={<ToolsPage />} />
+          <Route path="/datatest" element={<CollegeDataTable />} />
 
-<Route path="/cookies" element={
-            <ErrorBoundary>
-              <CookiePolicy />
-            </ErrorBoundary>
-          } />
-          
+          {/* --- PROTECTED ROUTES --- */}
+          <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
+          <Route path="/payment" element={<ProtectedRoute><Payment setIsPaymentProcessing={setIsPaymentProcessing} /></ProtectedRoute>} />
+          <Route path="/mentor-dashboard" element={<ProtectedRoute allowedRoles={["mentor"]}><MentorPage /></ProtectedRoute>} />
+          <Route path="/mentee-dashboard" element={<ProtectedRoute allowedRoles={["mentee"]}><MenteePage /></ProtectedRoute>} />
+
+          <Route path="/:dashboardType" element={<DashboardLayout />}>
+            <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="tools/college-predictor" element={<CollegePredictor />} />
+            <Route path="tools/rank-calculator" element={<RankCalculator />} />
+            <Route path="tools/percentile-calculator" element={<PercentileCalculator />} />
+            <Route path="tools/state-college-predictor" element={<StateCollegePredictor />} />
+            <Route path="tools/cgpa-calculator" element={<CGPACalculator />} />
+            <Route path="tools/study-planner" element={<StudyPlanner />} />
+            <Route path="tools/branch-comparison" element={<BranchComparison />} />
+            <Route path="resources/mental-health" element={<MentalHealthComponent />} />
+            <Route path="resources" element={<ResourcesComingSoon />} />
+            <Route path="tests" element={<MockTestsComingSoon />} />
+            <Route path="progress" element={<ProgressComingSoon />} />
+          </Route>
+
+          <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>}>
+            <Route index element={<AdminHome />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="settings" element={<AdminSettings />} />
+            <Route path="college-data" element={<AdminCollegeData />} />
+            <Route path="plan-event-management" element={<AdminPlanAndEventManagement />} />
+            <Route path="payment-analytics" element={<AdminPaymentAnalytics />} />
+          </Route>
+
           <Route path="/unauthorized" element={
-            <div className="flex items-center justify-center min-h-screen">
-              <div className="text-center p-6 max-w-md">
-                <h1 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">
-                  Access Denied
-                </h1>
-                <p className="text-gray-600 dark:text-gray-300 mb-6">
-                  You don't have permission to view this page
-                </p>
-                <button
-                  onClick={() => window.history.back()}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  Go Back
-                </button>
+            <div className="flex justify-center items-center h-screen text-center">
+              <div>
+                <h1 className="text-2xl text-red-600 font-bold">Access Denied</h1>
+                <p>You don’t have permission to view this page</p>
+                <button className="mt-4 px-4 py-2 bg-blue-600 text-white rounded" onClick={() => window.history.back()}>Go Back</button>
               </div>
             </div>
           } />
 
-          {/* Tools Routes */}
-          <Route path="/tools" element={
-            <ErrorBoundary>
-              <ToolsPage />
-            </ErrorBoundary>
-          } />
-          
-          
-
-          {/* Authentication */}
-<Route
-  path="/authForm"
-  element={
-    <ErrorBoundary>
-      {user ? (
-        <Navigate
-          to={
-            user.role.toLowerCase() === "admin"
-              ? "/admin"
-              : user.role.toLowerCase() === "mentor"
-              ? "/mentor-dashboard"
-              : "/mentee-dashboard"
-          }
-          replace
-        />
-      ) : (
-        <AuthForm />
-      )}
-    </ErrorBoundary>
-  }
-/>
-
-          {/* Protected Routes */}
-          <Route path="/mentor-dashboard" element={
-            <ProtectedRoute allowedRoles={["mentor"]}>
-              <MentorPage />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/mentee-dashboard" element={
-            <ProtectedRoute allowedRoles={["mentee"]}>
-              <MenteePage />
-            </ProtectedRoute>
-          } />
-          
-
-  {/* Dashboard Layout with Nested Routes */}
-  <Route path="/:dashboardType" element={<DashboardLayout />}>
-    <Route
-      path="profile"
-      element={
-        <ProtectedRoute allowedRoles={["mentee", "mentor"]}>
-          <Profile />
-        </ProtectedRoute>
-      }
-    />
-    <Route path="tools/college-predictor" element={
-            <ErrorBoundary>
-              <CollegePredictor />
-            </ErrorBoundary>
-    } />
-
-<Route path="tools/rank-calculator" element={
-            <ErrorBoundary>
-              <RankCalculator />
-            </ErrorBoundary>
-          } />
-          
-          <Route path="tools/percentile-calculator" element={
-            <ErrorBoundary>
-              <PercentileCalculator />
-            </ErrorBoundary>
-          } />
-          
-        
-
-          <Route path="tools/state-college-predictor" element={
-            <ErrorBoundary>
-              <StateCollegePredictor />
-            </ErrorBoundary>
-          } />
-          
-          <Route path="tools/cgpa-calculator" element={
-            <ErrorBoundary>
-              <CGPACalculator />
-            </ErrorBoundary>
-          } />
-          
-          {/* <Route path="/tools/college-predictor-services" element={
-            <ErrorBoundary>
-              <CollegePredictorService/>
-            </ErrorBoundary>
-          } /> */}
-
-          <Route path="tools/branch-comparison" element={
-            <ErrorBoundary>
-              <BranchComparison />
-            </ErrorBoundary>
-          } />
-
-{/*           
-          <Route path="/tools/marking-scheme" element={
-            <ErrorBoundary>
-              <MarkingScheme />
-            </ErrorBoundary>
-          } /> */}
-          
-          {/* <Route path="/tools/cutoff-analyzer" element={
-            <ErrorBoundary>
-              <CutoffAnalyzer />
-            </ErrorBoundary>
-          } /> */}
-          
-          {/* <Route path="/tools/exam-tools" element={
-            <ErrorBoundary>
-              <ExamTools />
-            </ErrorBoundary>
-          } /> */}
-          
-          <Route path="tools/study-planner" element={
-            <ErrorBoundary>
-              <StudyPlanner />
-            </ErrorBoundary>
-          } />
-
-          <Route path="resources/mental-health" element={
-            <ErrorBoundary>
-              <MentalHealthComponent />
-            </ErrorBoundary>
-          } />
-
-          <Route path="resources" element={
-            <ErrorBoundary>
-              <ResourcesComingSoon />
-            </ErrorBoundary>
-          } />
-                    
-                    <Route path="tests" element={
-            <ErrorBoundary>
-              <MockTestsComingSoon />
-            </ErrorBoundary>
-          } />
-                    <Route path="progress" element={
-            <ErrorBoundary>
-              <ProgressComingSoon />
-            </ErrorBoundary>
-          } />
-
-  </Route>
-
-          
-          <Route path="/datatest" element={
-            <ErrorBoundary>
-              <CollegeDataTable />
-            </ErrorBoundary>
-          } />
-                    
-
-          
-<Route path="/admin" element={
-  <ErrorBoundary>
-    <ProtectedRoute allowedRoles={["admin"]}>
-      <AdminDashboard />
-    </ProtectedRoute>
-  </ErrorBoundary>
-}>
-  <Route index element={<AdminHome />} />
-  <Route path="users" element={<AdminUsers />} />
-  <Route path="settings" element={<AdminSettings />} />
-  <Route path="college-data" element={<AdminCollegeData/>} />
-  <Route path="plan-management" element={<AdminPaymentManagement/>} />
-    <Route path="event-management" element={<AdminEventManagement/>} />
-  <Route path="payment-analytics" element={<AdminPaymentAnalytics/>} />
-</Route>
-
-
-          {/* 404 Fallback */}
           <Route path="*" element={
-            <div className="flex items-center justify-center min-h-screen">
-              <div className="text-center p-6 max-w-md">
-                <h1 className="text-2xl font-bold mb-4">404 - Page Not Found</h1>
-                <p className="text-gray-600 dark:text-gray-300 mb-6">
-                  The page you're looking for doesn't exist or has been moved.
-                </p>
-                <button
-                  onClick={() => window.location.href = "/"}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  Go to Homepage
-                </button>
+            <div className="flex justify-center items-center h-screen text-center">
+              <div>
+                <h1 className="text-2xl font-bold">404 - Page Not Found</h1>
+                <p className="text-gray-600 mt-2">The page you're looking for doesn’t exist.</p>
+                <button className="mt-4 px-4 py-2 bg-blue-600 text-white rounded" onClick={() => window.location.href = "/"}>Go to Homepage</button>
               </div>
             </div>
           } />
         </Routes>
       </Suspense>
+
+      <Toaster position="top-center" toastOptions={{ duration: 4000, style: { background: "#363636", color: "#fff" } }} />
     </div>
   );
 }
 
-// App Wrapper with Router
-function App() {
+export default function App() {
   return (
     <Router>
       <AppContent />
     </Router>
   );
 }
-
-export default App;

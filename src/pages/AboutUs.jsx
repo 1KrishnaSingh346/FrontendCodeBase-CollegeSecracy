@@ -112,9 +112,9 @@ const AboutUs = () => {
                 onClick={handleProfileToggle}
                 className="flex items-center space-x-1 px-3 py-2 rounded-lg transition-all duration-300"
               >
-                {user.profilePic ? (
+                {user.profilePic?.url ? (
                   <img 
-                    src={user.profilePic} 
+                    src={user.profilePic?.url} 
                     alt="Profile" 
                     className="w-8 h-8 rounded-full object-cover border-2 border-orange-400"
                   />
@@ -153,7 +153,7 @@ const AboutUs = () => {
             </div>
           ) : (
             <Link 
-              to="/authForm" 
+              to="/login" 
               className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all duration-300 ${darkMode ? 
                 'text-gray-300 border-gray-600 hover:border-orange-400 hover:text-orange-400 hover:bg-gray-700/50' : 
                 'text-gray-700 border-gray-300 hover:border-orange-500 hover:text-orange-500 hover:bg-gray-100/70'}`}
@@ -267,7 +267,7 @@ const AboutUs = () => {
         </>
       ) : (
         <Link
-          to="/authForm"
+          to="/signup"
           className={`block px-3 py-3 rounded-lg text-base font-medium border transition-all duration-300 ${darkMode ? 
             'text-gray-300 border-gray-600 hover:border-orange-400 hover:text-orange-400 hover:bg-gray-700/50' : 
             'text-gray-700 border-gray-300 hover:border-orange-500 hover:text-orange-500 hover:bg-gray-100/70'}`}
@@ -317,7 +317,7 @@ const AboutUs = () => {
               className="flex flex-wrap justify-center gap-4"
             >
               <Link
-                to="/authForm"
+                to="/signup"
                 className="px-6 py-3 bg-gradient-to-r from-blue-600 to-orange-500 text-white rounded-full font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
               >
                 Join Our Community
@@ -750,7 +750,7 @@ const AboutUs = () => {
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Link
-                to="/authForm?type=register"
+                to="/signup"
                 className="px-8 py-3 bg-gradient-to-r from-blue-600 to-orange-500 text-white rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
               >
                 Sign Up Now

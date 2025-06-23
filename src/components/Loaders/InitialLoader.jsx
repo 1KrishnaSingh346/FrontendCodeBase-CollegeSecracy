@@ -1,260 +1,366 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { GraduationCap, BookOpen, Users, Lock } from "lucide-react";
 
 const InitialLoader = ({ isPageLoaded }) => {
-  const [progress, setProgress] = useState(0);
-  const [currentIconIndex, setCurrentIconIndex] = useState(0);
-  const [isLoaderVisible, setIsLoaderVisible] = useState(true);
-  const [theme, setTheme] = useState("dark"); // Default to dark
-  
-  // Array of icon components with unique IDs
-  const icons = [
-    { id: 1, component: GraduationCap, name: "GraduationCap" },
-    { id: 2, component: BookOpen, name: "BookOpen" },
-    { id: 3, component: Users, name: "Users" },
-    { id: 4, component: Lock, name: "Lock" }
-  ];
-  
-  const messages = [
-    "Loading campus resources...",
-    "Preparing mentorship tools...",
-    "Connecting student network...",
-    "Securing your data..."
+  const [idx, setIdx] = useState(0);
+  const [visible, setVisible] = useState(true);
+  const [theme, setTheme] = useState("dark");
+
+  const msgs = [
+    "Unlocking knowledge vault...",
+    "Setting up your learning desk...",
+    "Fueling mentorship engine...",
+    "Securing academic network...",
+    "Preparing your digital campus..."
   ];
 
   useEffect(() => {
-    // Check for saved theme preference
-    const savedTheme = localStorage.getItem("darkMode") === "true" ? "dark" : "light";
-    setTheme(savedTheme);
+    const t = localStorage.getItem("darkMode") === "true" ? "dark" : "light";
+    setTheme(t);
   }, []);
 
   useEffect(() => {
     if (isPageLoaded) {
-      // When page is loaded, wait for animation to complete before hiding
-      const timer = setTimeout(() => {
-        setIsLoaderVisible(false);
-      }, 700); // Matches the transition duration
-      return () => clearTimeout(timer);
-    } else {
-      setIsLoaderVisible(true);
-    }
+      const timeout = setTimeout(() => setVisible(false), 800);
+      return () => clearTimeout(timeout);
+    } else setVisible(true);
   }, [isPageLoaded]);
 
   useEffect(() => {
-    if (!isLoaderVisible) return;
+    const iv = setInterval(() => setIdx(i => (i + 1) % msgs.length), 2200);
+    return () => clearInterval(iv);
+  }, []);
 
-    // Reset progress when loader becomes visible
-    setProgress(0);
-
-    // Progress animation with easing
-    let start = null;
-    const duration = 3000; // 3 seconds total
-    const animateProgress = (timestamp) => {
-      if (!start) start = timestamp;
-      const elapsed = timestamp - start;
-      const progress = Math.min((elapsed / duration) * 100, 100);
-      
-      // Ease-out function for smoother progression
-      const easedProgress = easeOutQuad(progress / 100) * 100;
-      setProgress(easedProgress);
-      
-      if (elapsed < duration) {
-        requestAnimationFrame(animateProgress);
-      }
-    };
-    
-    requestAnimationFrame(animateProgress);
-
-    // Icon/message rotation
-    const iconInterval = setInterval(() => {
-      setCurrentIconIndex(prev => (prev + 1) % icons.length);
-    }, 1500);
-
-    return () => {
-      clearInterval(iconInterval);
-    };
-  }, [isLoaderVisible, icons.length]);
-
-  // Easing function for smooth progress animation
-  const easeOutQuad = (t) => {
-    return t * (2 - t);
-  };
-
-  const currentIcon = icons[currentIconIndex];
-  const CurrentIcon = currentIcon.component;
-
-  // Theme colors
   const themeColors = {
     dark: {
       bg: "bg-gray-900",
       text: "text-gray-100",
-      secondaryText: "text-gray-400",
-      progressBg: "bg-gray-700",
-      iconColor: "text-orange-400",
-      logoIconColor: "text-orange-500",
-      dotColor: ["#60a5fa", "#f97316"],
-      footerText: "text-gray-500",
-      gradientFrom: "from-blue-500",
-      gradientTo: "to-orange-500"
+      subtext: "text-gray-400",
+      primary: "from-purple-500 via-pink-500 to-indigo-600",
+      secondary: "via-pink-500",
+      svgFill: "#a78bfa",
+      dot1: "#8b5cf6",
+      dot2: "#ec4899",
+      bgPattern: "#1e1b4b",
+      particle: "rgba(167, 139, 250, 0.6)"
     },
     light: {
       bg: "bg-gray-50",
       text: "text-gray-900",
-      secondaryText: "text-gray-600",
-      progressBg: "bg-gray-200",
-      iconColor: "text-blue-600",
-      logoIconColor: "text-blue-500",
-      dotColor: ["#3b82f6", "#ea580c"],
-      footerText: "text-gray-400",
-      gradientFrom: "from-blue-500",
-      gradientTo: "to-orange-500"
+      subtext: "text-gray-600",
+      primary: "from-blue-500 via-cyan-500 to-teal-500",
+      secondary: "via-emerald-500",
+      svgFill: "#3b82f6",
+      dot1: "#3b82f6",
+      dot2: "#10b981",
+      bgPattern: "#e0f2fe",
+      particle: "rgba(59, 130, 246, 0.6)"
     }
   };
 
   const colors = themeColors[theme];
 
+  // Floating particles configuration
+  const particles = Array.from({ length: 15 }, (_, i) => ({
+    id: i,
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    size: Math.random() * 0.5 + 0.3,
+    delay: Math.random() * 2
+  }));
+
   return (
     <AnimatePresence>
-      {isLoaderVisible && (
+      {visible && (
         <motion.div
-          className={`fixed inset-0 flex flex-col items-center justify-center ${colors.bg} z-[9999]`}
+          className={`fixed inset-0 z-50 flex items-center justify-center ${colors.bg}`}
           initial={{ opacity: 1 }}
-          animate={{ opacity: 1 }}
-          exit={{ 
-            opacity: 0,
-            transition: { duration: 0.7, ease: "easeInOut" }
-          }}
+          exit={{ opacity: 0, transition: { duration: 0.5 } }}
         >
-          {/* Main Content Container */}
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }} // Custom spring curve
-            className="flex flex-col items-center w-full px-4 sm:px-8 md:max-w-md text-center"
+          {/* Animated Gradient Background */}
+          <motion.div 
+            className="absolute inset-0 overflow-hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.15 }}
+            transition={{ duration: 1 }}
           >
-            {/* Animated Icon */}
-            <motion.div
-              key={`icon-${currentIcon.id}`}
-              initial={{ y: 10, opacity: 0, rotate: -5 }}
-              animate={{ 
-                y: 0, 
-                opacity: 1, 
-                rotate: 0,
-                transition: { type: "spring", stiffness: 300, damping: 15 }
-              }}
-              exit={{ y: -10, opacity: 0 }}
-              transition={{ duration: 0.4 }}
-              className="mb-4 sm:mb-6"
+            <div className={`absolute inset-0 bg-gradient-to-br ${colors.primary} opacity-50`} />
+          </motion.div>
+
+          {/* SVG Background Pattern with Floating Particles */}
+          <div className="absolute inset-0 overflow-hidden opacity-20 dark:opacity-15">
+            <svg
+              className="absolute inset-0 w-full h-full"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
             >
-              <CurrentIcon 
-                size={48}
-                className={colors.iconColor}
-                strokeWidth={1.75}
-              />
-            </motion.div>
-
-            {/* Logo + Text */}
-            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-1">
-              <motion.div 
-                className="flex justify-center sm:block"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.1, type: "spring" }}
-              >
-                <GraduationCap 
-                  size={32}
-                  className={colors.logoIconColor} 
-                />
-              </motion.div>
-              <motion.h1 
-                className={`text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r ${colors.gradientFrom} ${colors.gradientTo} bg-clip-text text-transparent tracking-tight`}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ 
-                  opacity: 1, 
-                  x: 0,
-                  transition: { delay: 0.2, duration: 0.5 }
-                }}
-              >
-                College<span className="text-blue-400">Secracy</span>
-              </motion.h1>
-            </div>
-
-            {/* Rotating Message */}
-            <motion.p
-              key={`message-${currentIcon.id}`}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ 
-                opacity: 1, 
-                y: 0,
-                transition: { duration: 0.3 }
-              }}
-              exit={{ opacity: 0 }}
-              className={`${colors.secondaryText} mb-4 sm:mb-6 h-6 text-sm sm:text-base md:text-lg`}
-            >
-              {messages[currentIconIndex]}
-            </motion.p>
-
-            {/* Progress Bar */}
-            <div className={`w-full max-w-xs sm:max-w-sm md:max-w-md ${colors.progressBg} rounded-full h-2 sm:h-2.5 mb-4 sm:mb-6 overflow-hidden`}>
-              <motion.div
-                className={`h-full bg-gradient-to-r ${colors.gradientFrom} ${colors.gradientTo} rounded-full`}
-                initial={{ width: "0%" }}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-              />
-            </div>
-
-            {/* Percentage Indicator */}
-            <motion.div
-              className={`${colors.text} font-mono text-xs sm:text-sm mb-1`}
-              initial={{ opacity: 0 }}
-              animate={{ 
-                opacity: 1,
-                transition: { delay: 0.4 }
-              }}
-            >
-              {Math.round(progress)}%
-            </motion.div>
-
-            {/* Animated Dots */}
-            <div className="flex mt-1 sm:mt-2 space-x-1 sm:space-x-2">
-              {[1, 2, 3].map((dot) => (
-                <motion.div
-                  key={`dot-${dot}`}
-                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full"
-                  style={{ backgroundColor: colors.dotColor[0] }}
-                  animate={{ 
-                    y: [0, -6, 0],
-                    backgroundColor: [
-                      colors.dotColor[0], 
-                      colors.dotColor[1], 
-                      colors.dotColor[0]
-                    ],
-                    scale: [1, 1.2, 1]
+              <rect width="100" height="100" fill={colors.bgPattern} />
+              {particles.map((particle) => (
+                <motion.circle
+                  key={particle.id}
+                  cx={particle.x}
+                  cy={particle.y}
+                  r={particle.size}
+                  fill={colors.particle}
+                  initial={{ opacity: 0 }}
+                  animate={{
+                    opacity: [0, 0.8, 0],
+                    cx: particle.x + (Math.random() * 2 - 1),
+                    cy: particle.y + (Math.random() * 2 - 1)
                   }}
                   transition={{
+                    delay: particle.delay,
+                    duration: 3 + Math.random() * 4,
                     repeat: Infinity,
-                    duration: 1.4,
-                    ease: "easeInOut",
-                    delay: dot * 0.15,
+                    repeatType: "reverse",
+                    ease: "easeInOut"
                   }}
                 />
               ))}
-            </div>
-          </motion.div>
+              <path
+                d="M0,20 Q50,25 100,20 T200,20"
+                stroke={colors.svgFill}
+                strokeWidth="0.3"
+                fill="none"
+                strokeDasharray="2 2"
+              />
+            </svg>
+          </div>
 
-          {/* Footer Note */}
-          <motion.p
-            className={`absolute bottom-4 sm:bottom-6 ${colors.footerText} text-xxs sm:text-xs px-4 text-center`}
-            initial={{ opacity: 0 }}
-            animate={{ 
-              opacity: 0.7,
-              transition: { delay: 1 }
-            }}
+          {/* Main Content */}
+          <motion.div
+            className="relative z-10 text-center p-6 sm:p-8 max-w-md w-full mx-4"
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            transition={{ duration: 0.6, ease: "backOut" }}
           >
-            Connecting students with mentors since 2025
-          </motion.p>
+            {/* Animated Knowledge Hub Icon */}
+            <motion.div
+              className="mb-6 mx-auto w-28 h-28 relative"
+              animate={{
+                rotate: [0, 5, -5, 0],
+                y: [0, -8, 0]
+              }}
+              transition={{
+                repeat: Infinity,
+                duration: 4,
+                ease: "easeInOut"
+              }}
+            >
+              <svg
+                viewBox="0 0 512 512"
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-full h-full"
+              >
+                {/* Book Cover */}
+                <motion.path
+                  d="M128 80v352a48 48 0 0 0 48 48h224a48 48 0 0 0 48-48V80a48 48 0 0 0-48-48H176a48 48 0 0 0-48 48z"
+                  fill="none"
+                  stroke={colors.svgFill}
+                  strokeWidth="24"
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: 1 }}
+                  transition={{ duration: 1.5, ease: "easeInOut" }}
+                />
+                {/* Pages */}
+                <motion.path
+                  d="M128 80c0-26.5 21.5-48 48-48h224c26.5 0 48 21.5 48 48v352c0 26.5-21.5 48-48 48H176c-26.5 0-48-21.5-48-48V80z"
+                  fill="none"
+                  stroke={colors.text}
+                  strokeWidth="16"
+                  strokeDasharray="10 5"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 0.3 }}
+                  transition={{ delay: 0.8, duration: 1 }}
+                />
+                {/* Knowledge Sparkles */}
+                <motion.g
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: [0, 0.8, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+                >
+                  <circle cx="256" cy="160" r="8" fill={colors.dot1} />
+                  <circle cx="320" cy="240" r="6" fill={colors.dot2} />
+                  <circle cx="200" cy="280" r="5" fill={colors.dot1} />
+                </motion.g>
+              </svg>
+              
+              {/* Animated Glow */}
+              <motion.div
+                className="absolute inset-0 rounded-full blur-md"
+                style={{
+                  background: `radial-gradient(circle at center, ${colors.svgFill} 0%, transparent 70%)`
+                }}
+                animate={{
+                  opacity: [0.1, 0.3, 0.1],
+                  scale: [0.9, 1.1, 0.9]
+                }}
+                transition={{
+                  repeat: Infinity,
+                  duration: 3,
+                  ease: "easeInOut"
+                }}
+              />
+            </motion.div>
+
+            {/* Brand Name with Subtle Glow */}
+            <div className="relative inline-block">
+              <motion.h1
+                className={`text-4xl sm:text-5xl font-bold bg-gradient-to-r ${colors.primary} bg-clip-text text-transparent mb-1`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.6 }}
+              >
+                CollegeSecracy
+              </motion.h1>
+              <motion.div
+                className="absolute -bottom-1 left-0 right-0 h-1 blur-sm"
+                style={{
+                  background: `linear-gradient(90deg, ${colors.dot1}, ${colors.dot2})`
+                }}
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ delay: 0.5, duration: 0.8 }}
+              />
+            </div>
+
+            <motion.p
+              className={`text-xs ${colors.subtext} mb-6`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.8, transition: { delay: 0.8 } }}
+            >
+              Your Gateway to Academic Excellence
+            </motion.p>
+
+            {/* Animated Message with Typing Effect */}
+            <motion.div className="h-14 flex items-center justify-center">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.4 }}
+                  className="relative"
+                >
+                  <p className={`text-lg ${colors.subtext} font-medium`}>
+                    {msgs[idx]}
+                    <motion.span
+                      className="ml-1 inline-block w-1 h-5 align-middle"
+                      style={{ backgroundColor: colors.text }}
+                      animate={{ opacity: [0, 1, 0] }}
+                      transition={{ repeat: Infinity, duration: 0.8 }}
+                    />
+                  </p>
+                </motion.div>
+              </AnimatePresence>
+            </motion.div>
+
+            {/* DNA Strand Loading Indicator */}
+            <div className="flex justify-center mt-6">
+              <svg width="120" height="24" viewBox="0 0 120 24" className="mx-auto">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <g key={i} transform={`translate(${i * 24}, 0)`}>
+                    <motion.path
+                      d="M12 0 C 18 8, 6 16, 12 24"
+                      stroke={colors.dot1}
+                      strokeWidth="2"
+                      fill="none"
+                      initial={{ pathLength: 0 }}
+                      animate={{ pathLength: 1 }}
+                      transition={{
+                        delay: i * 0.1,
+                        duration: 0.8,
+                        repeat: Infinity,
+                        repeatType: "reverse",
+                        ease: "easeInOut"
+                      }}
+                    />
+                    <motion.path
+                      d="M12 0 C 18 8, 6 16, 12 24"
+                      stroke={colors.dot2}
+                      strokeWidth="2"
+                      fill="none"
+                      strokeDasharray="0.1 0.5"
+                      initial={{ pathLength: 0 }}
+                      animate={{ pathLength: 1 }}
+                      transition={{
+                        delay: i * 0.1 + 0.4,
+                        duration: 0.8,
+                        repeat: Infinity,
+                        repeatType: "reverse",
+                        ease: "easeInOut"
+                      }}
+                    />
+                    <motion.circle
+                      cx="12"
+                      cy="0"
+                      r="2"
+                      fill={colors.dot1}
+                      initial={{ scale: 0 }}
+                      animate={{ scale: [0, 1.2, 1] }}
+                      transition={{
+                        delay: i * 0.1,
+                        duration: 0.6,
+                        repeat: Infinity,
+                        repeatType: "reverse"
+                      }}
+                    />
+                    <motion.circle
+                      cx="12"
+                      cy="24"
+                      r="2"
+                      fill={colors.dot2}
+                      initial={{ scale: 0 }}
+                      animate={{ scale: [0, 1.2, 1] }}
+                      transition={{
+                        delay: i * 0.1 + 0.4,
+                        duration: 0.6,
+                        repeat: Infinity,
+                        repeatType: "reverse"
+                      }}
+                    />
+                  </g>
+                ))}
+              </svg>
+            </div>
+
+            {/* Footer Note with Animated Progress */}
+            <motion.div 
+              className="mt-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.2 }}
+            >
+              <div className="h-1 w-full bg-gray-300 dark:bg-gray-700 rounded-full overflow-hidden mb-2">
+                <motion.div
+                  className={`h-full rounded-full bg-gradient-to-r ${colors.primary}`}
+                  initial={{ width: 0 }}
+                  animate={{ width: "100%" }}
+                  transition={{ duration: 4, ease: "linear" }}
+                />
+              </div>
+              <p className={`text-xs ${colors.subtext} flex items-center justify-center`}>
+                <motion.span
+                  animate={{ rotate: [0, 360] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                  className="inline-block mr-2"
+                >
+                  ⚡
+                </motion.span>
+                Empowering {new Date().getFullYear()} learners
+                <motion.span
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ repeat: Infinity, duration: 2 }}
+                  className="inline-block ml-2"
+                >
+                  🚀
+                </motion.span>
+              </p>
+            </motion.div>
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>

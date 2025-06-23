@@ -8,7 +8,7 @@ import {
 import useAuthStore from '@/store/useAuthStore';
 import AdminPlanManagement from '../AdminPages/AdminPaymentManagement';
 
-const AdminEventManagement = () => {
+const AdminPlanAndEventManagement = () => {
   const [events, setEvents] = useState([]);
   const [newEvent, setNewEvent] = useState({
     title: '',
@@ -480,4 +480,4 @@ const AdminEventManagement = () => {
   );
 };
 
-export default AdminEventManagement;
+export default AdminPlanAndEventManagement;
