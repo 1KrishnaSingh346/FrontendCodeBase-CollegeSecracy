@@ -25,7 +25,9 @@ initializeAuth: async () => {
   set({ isCheckingAuth: true });
 
   try {
-    const response = await api.get('/api/v1/auth/check-session');
+    const response = await api.get('/api/v1/auth/check-session', {
+      skipAuthRetry: true, // ⬅️ This prevents refresh-token loop
+    });
     const sessionValid = response.data?.code === 200;
 
     if (!sessionValid) {
@@ -40,20 +42,31 @@ initializeAuth: async () => {
       initialAuthCheckComplete: true
     });
 
-  } catch (err) {
-    console.error('Auth initialization error:', err);
+  // } catch (err) {
+  //   console.error('Auth initialization error:', err);
 
-    // ❌ Let refresh-token run via interceptor
-    if (err?.response?.status !== 401) {
-      set({
-        user: null,
-        isAuthenticated: false,
-        isCheckingAuth: false,
-        initialAuthCheckComplete: true
-      });
-    }
-    // ✅ Don’t force logout on 401 — let refresh-token logic decide that
-  }
+  //   // ❌ Let refresh-token run via interceptor
+  //   if (err?.response?.status !== 401) {
+  //     set({
+  //       user: null,
+  //       isAuthenticated: false,
+  //       isCheckingAuth: false,
+  //       initialAuthCheckComplete: true
+  //     });
+  //   }
+  //   // ✅ Don’t force logout on 401 — let refresh-token logic decide that
+  // }
+  } catch (err) {
+  console.error('Auth initialization error:', err);
+
+  // ✅ Fix: Set auth state to unauthenticated even on 401
+  set({
+    user: null,
+    isAuthenticated: false,
+    isCheckingAuth: false,
+    initialAuthCheckComplete: true
+  });
+}
 },
 
 
@@ -90,7 +103,7 @@ login: async (credentials) => {
       }
     );
 
-    // Success case
+    // ✅ Success case
     if (response.data?.status === 'success' && response.data.data?.user) {
       const { user } = response.data.data;
       await get().loadUser();
@@ -120,10 +133,12 @@ login: async (credentials) => {
 
       switch (err.response.status) {
         case 400:
-          errorType = 'validation';
-          break;
-        case 401:
-          errorType = 'invalid_credentials';
+          // ✅ Most likely invalid credentials or missing fields
+          if (resData.message?.toLowerCase().includes('password') || resData.message?.toLowerCase().includes('email')) {
+            errorType = 'invalid_credentials';
+          } else {
+            errorType = 'validation';
+          }
           break;
         case 403:
           if (resData.code === 'ACCOUNT_DEACTIVATED') {
